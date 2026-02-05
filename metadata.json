@@ -1,0 +1,7 @@
+{
+  "name": "Warranty Advocates LLC",
+  "description": "A professional platform for managing home and auto warranties, filing claims, and receiving expert advocacy. Real People. Real Warranty Help.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

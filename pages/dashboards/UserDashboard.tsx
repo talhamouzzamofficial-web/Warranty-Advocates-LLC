@@ -1,0 +1,724 @@
+
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { 
+  ShieldCheck, 
+  FileText, 
+  Plus, 
+  Clock, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Upload,
+  ArrowRight,
+  ChevronRight,
+  TrendingUp,
+  FileSearch,
+  Zap,
+  ClipboardCheck,
+  Search,
+  FilePlus,
+  ArrowLeft,
+  User as UserIcon,
+  Camera,
+  MapPin,
+  Mail,
+  Smartphone,
+  Save,
+  Check,
+  Hash,
+  Globe,
+  Lock,
+  X,
+  Home as HomeIcon,
+  Car,
+  ShoppingBag,
+  Gift,
+  Copy,
+  Share2,
+  Twitter,
+  ExternalLink,
+  DollarSign,
+  PieChart,
+  Users,
+  Activity,
+  ArrowUpRight,
+  Loader2
+} from 'lucide-react';
+import { UserProfile, ClaimStatus, ClaimType, Warranty, Claim } from '../../types';
+import { PRICING, COMPANY_INFO } from '../../constants';
+
+interface UserDashboardProps {
+  user: UserProfile;
+  onUpdateProfile?: (updatedProfile: Partial<UserProfile>) => void;
+}
+
+const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const path = location.pathname;
+
+  // State for Free Tier restrictions
+  const [isFreeTier, setIsFreeTier] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // State for a brand new account
+  const [warranties, setWarranties] = useState<Warranty[]>([]);
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [isAddingWarranty, setIsAddingWarranty] = useState(false);
+  const [isAddingClaim, setIsAddingClaim] = useState(false);
+  
+  // Referral State
+  const [copied, setCopied] = useState(false);
+  
+  // Use the actual referral code from user profile or generate a consistent one
+  const referralCode = user.referralCode || (user.fullName.split(' ')[0].toUpperCase() + user.id.substring(0, 4));
+  const referralLink = `${window.location.origin}/#/signup?ref=${referralCode}`;
+  
+  // Referral Data from profile
+  const referralStats = {
+    totalEarned: user.totalEarned || 0,
+    pendingRewards: user.pendingRewards || 0,
+    activeSignups: 0,
+    conversionRate: '0%',
+    recentActivity: []
+  };
+
+  // Profile state synced with prop
+  const [profilePic, setProfilePic] = useState<string | undefined>(user.photoUrl);
+  const [fullName, setFullName] = useState(user.fullName);
+  const [address, setAddress] = useState(user.address || '');
+  const [postcode, setPostcode] = useState(user.postcode || '');
+  const [stateName, setStateName] = useState(user.state || '');
+  const [phone, setPhone] = useState(user.phone || '');
+  
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setProfilePic(user.photoUrl);
+    setFullName(user.fullName);
+    setAddress(user.address || '');
+    setPostcode(user.postcode || '');
+    setStateName(user.state || '');
+    setPhone(user.phone || '');
+  }, [user]);
+
+  const stats = [
+    { label: 'Active Warranties', value: warranties.length, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-100' },
+    { label: 'Open Claims', value: claims.filter(c => c.status !== ClaimStatus.APPROVED).length, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100' },
+    { label: 'Referral Earnings', value: `$${referralStats.totalEarned.toFixed(2)}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+  ];
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setProfilePic(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setSaveSuccess(false);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    
+    if (onUpdateProfile) {
+      onUpdateProfile({
+        fullName,
+        photoUrl: profilePic,
+        address,
+        postcode,
+        state: stateName,
+        phone
+      });
+    }
+    
+    setIsSaving(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const addClaim = (newClaim: Claim) => {
+    setClaims([newClaim, ...claims]);
+  };
+
+  // Locked View for Free Tier users
+  const LockedPage = ({ title }: { title: string }) => (
+    <div className="flex flex-col items-center justify-center py-24 px-4 text-center animate-fade-in">
+      <div className="w-24 h-24 bg-blue-50 text-blue-900 rounded-[32px] flex items-center justify-center mb-8">
+        <Lock className="w-12 h-12" />
+      </div>
+      <h2 className="text-3xl font-bold text-slate-900 mb-4 brand-font">{title} is Locked</h2>
+      <p className="text-slate-500 max-w-md mx-auto text-lg mb-10">
+        You are currently on the Free Tier. To manage warranties and file claims, please upgrade to our Premium Advocacy plan.
+      </p>
+      <button 
+        onClick={() => setShowUpgradeModal(true)}
+        className="px-10 py-4 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center gap-2 active:scale-95"
+      >
+        Upgrade to Premium <Zap className="w-5 h-5 fill-current" />
+      </button>
+    </div>
+  );
+
+  const renderContent = () => {
+    if (path === '/dashboard/rewards') {
+      return (
+        <div className="space-y-8 animate-fade-in no-scrollbar">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 brand-font">Rewards & Affiliate Dashboard</h2>
+              <p className="text-slate-500">Earn 20% commission for every successful referral.</p>
+            </div>
+            <button 
+              onClick={handleCopyLink}
+              className={`px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-3 shadow-xl w-full md:w-auto justify-center active:scale-95 ${
+                copied ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-blue-900 text-white shadow-blue-900/10'
+              }`}
+            >
+              {copied ? <CheckCircle2 className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+              {copied ? 'Link Copied!' : 'Copy Referral Link'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+             {[
+               { label: 'Total Earned', value: `$${referralStats.totalEarned.toFixed(2)}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', change: '+0% this week' },
+               { label: 'Pending Payout', value: `$${referralStats.pendingRewards.toFixed(2)}`, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50', change: 'Payout at $50.00' },
+               { label: 'Referral Signups', value: '0', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50', change: '0 clicks today' },
+               { label: 'Commission Rate', value: '20%', icon: TrendingUp, color: 'text-amber-600', bg: 'bg-amber-50', change: 'Elite Partner level' },
+             ].map((stat, i) => (
+               <div key={i} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative group overflow-hidden transition-all hover:shadow-md">
+                 <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-6`}>
+                   <stat.icon className="w-6 h-6" />
+                 </div>
+                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                 <p className="text-2xl font-bold text-slate-900 mb-2">{stat.value}</p>
+                 <p className="text-[10px] font-bold text-slate-400">{stat.change}</p>
+                 <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <ArrowUpRight className="w-4 h-4 text-slate-300" />
+                 </div>
+               </div>
+             ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
+                <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-slate-900">Recent Referrals</h3>
+                  <button className="text-sm font-bold text-blue-900 hover:text-sky-600">View History</button>
+                </div>
+                <div className="p-20 text-center">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                      <Activity className="w-10 h-10" />
+                    </div>
+                    <p className="text-slate-500 font-medium">No referral activity yet. Start sharing your link!</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div className="bg-gradient-to-br from-blue-900 to-indigo-900 p-8 rounded-[40px] text-white shadow-xl relative overflow-hidden">
+                 <div className="absolute -top-12 -right-12 p-8 opacity-10 pointer-events-none">
+                   <Gift className="w-48 h-48" />
+                 </div>
+                 <h3 className="text-xl font-bold brand-font mb-4">Payout Goal</h3>
+                 <p className="text-blue-100 text-sm mb-8 leading-relaxed">Reach $50.00 in earnings to unlock your first withdrawal via PayPal or Bank Transfer.</p>
+                 <div className="space-y-4">
+                   <div className="flex justify-between text-xs font-bold">
+                     <span className="text-blue-300">Progress</span>
+                     <span>$0.00 / $50.00</span>
+                   </div>
+                   <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden">
+                     <div className="h-full bg-sky-400 w-0 transition-all duration-1000"></div>
+                   </div>
+                   <p className="text-[10px] text-blue-400 italic">Earnings are verified 30 days after signup.</p>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (path === '/dashboard/warranties') {
+      return isFreeTier ? <LockedPage title="Warranty Vault" /> : (
+        <div className="space-y-8 animate-fade-in">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 brand-font">Warranty Vault</h2>
+              <p className="text-slate-500">Securely store and manage all your warranty documents.</p>
+            </div>
+            <button 
+              onClick={() => setIsAddingWarranty(true)}
+              className="px-6 py-4 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all flex items-center gap-3 shadow-xl shadow-blue-900/10 w-full md:w-auto justify-center active:scale-95"
+            >
+              <Plus className="w-5 h-5" /> Upload New
+            </button>
+          </div>
+          <div className="bg-white p-20 rounded-[40px] border border-dashed border-slate-200 text-center">
+             <FileSearch className="w-16 h-16 text-slate-200 mx-auto mb-6" />
+             <h3 className="text-xl font-bold text-slate-900">Vault is Empty</h3>
+             <p className="text-slate-500 mb-8">Start by uploading your first contract for protection.</p>
+             <button onClick={() => setIsAddingWarranty(true)} className="text-blue-900 font-bold hover:underline">Add Warranty Document</button>
+          </div>
+        </div>
+      );
+    }
+
+    if (path === '/dashboard/claims') {
+      return isFreeTier ? <LockedPage title="Claim Advocacy" /> : (
+        <div className="space-y-8 animate-fade-in">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 brand-font">Claim Advocacy</h2>
+              <p className="text-slate-500">Track your ongoing claims and professional advocacy requests.</p>
+            </div>
+            <button 
+              onClick={() => setIsAddingClaim(true)}
+              className="px-6 py-4 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all flex items-center gap-3 shadow-xl shadow-blue-900/10 w-full md:w-auto justify-center active:scale-95"
+            >
+              <Plus className="w-5 h-5" /> New Claim Request
+            </button>
+          </div>
+          <div className="bg-white p-20 rounded-[40px] border border-dashed border-slate-200 text-center">
+             <ClipboardCheck className="w-16 h-16 text-slate-200 mx-auto mb-6" />
+             <h3 className="text-xl font-bold text-slate-900">No Open Claims</h3>
+             <p className="text-slate-500 mb-8">When we file a claim on your behalf, it will appear here.</p>
+             <button onClick={() => setIsAddingClaim(true)} className="text-blue-900 font-bold hover:underline">Start Advocacy Case</button>
+          </div>
+        </div>
+      );
+    }
+
+    if (path === '/dashboard/profile') {
+      return (
+        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-10">
+          <div className="px-4 sm:px-0">
+            <h2 className="text-3xl font-bold text-slate-900 brand-font">User Profile</h2>
+            <p className="text-slate-500">Manage your personal information and account settings.</p>
+          </div>
+          
+          <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden relative">
+            <div className="bg-blue-900 h-32 w-full relative">
+               <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 sm:left-12 sm:translate-x-0">
+                 <div className="relative group">
+                   <div className="w-32 h-32 rounded-full border-4 border-white bg-slate-200 overflow-hidden shadow-xl flex items-center justify-center text-slate-400 transition-transform group-hover:scale-105 duration-300">
+                      {profilePic ? (
+                        <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-12 h-12" />
+                      )}
+                   </div>
+                   <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 p-3 bg-sky-500 text-white rounded-full border-2 border-white hover:bg-sky-400 transition-all shadow-md group-hover:scale-110 active:scale-90"
+                    title="Change Profile Photo"
+                   >
+                     <Camera className="w-5 h-5" />
+                   </button>
+                   <input type="file" ref={fileInputRef} onChange={handleProfilePicChange} className="hidden" accept="image/*" />
+                 </div>
+               </div>
+            </div>
+            
+            <div className="pt-24 px-6 sm:px-12 pb-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                <div className="space-y-6">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 pb-2 border-b border-slate-50">Identity Details</h3>
+                  <div className="space-y-5">
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider ml-1">Full Display Name</label>
+                       <div className="relative group">
+                          <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-900 transition-colors" />
+                          <input 
+                            type="text" 
+                            value={fullName} 
+                            onChange={(e) => setFullName(e.target.value)} 
+                            className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white focus:border-blue-900 transition-all text-sm" 
+                            placeholder="Full Name"
+                          />
+                       </div>
+                    </div>
+                    <div className="space-y-1.5 group opacity-75">
+                       <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider ml-1">Account Email (Locked)</label>
+                       <div className="relative">
+                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <input type="email" value={user.email} disabled className="w-full pl-12 pr-6 py-4 bg-slate-100 border border-slate-200 rounded-2xl text-slate-500 font-medium cursor-not-allowed text-sm" />
+                       </div>
+                    </div>
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider ml-1">Primary Phone</label>
+                       <div className="relative group">
+                          <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-900 transition-colors" />
+                          <input 
+                            type="tel" 
+                            value={phone} 
+                            onChange={(e) => setPhone(e.target.value)} 
+                            placeholder="239-000-0000" 
+                            className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white focus:border-blue-900 transition-all text-sm" 
+                          />
+                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 pb-2 border-b border-slate-50">Location Settings</h3>
+                  <div className="space-y-5">
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider ml-1">Street Address</label>
+                       <div className="relative group">
+                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-900 transition-colors" />
+                          <input 
+                            type="text" 
+                            value={address} 
+                            onChange={(e) => setAddress(e.target.value)} 
+                            placeholder="123 Main St" 
+                            className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white focus:border-blue-900 transition-all text-sm" 
+                          />
+                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                         <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider ml-1">State</label>
+                         <div className="relative group">
+                            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-900 transition-colors" />
+                            <input 
+                              type="text" 
+                              value={stateName} 
+                              onChange={(e) => setStateName(e.target.value)} 
+                              placeholder="Florida" 
+                              className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white focus:border-blue-900 transition-all text-sm" 
+                            />
+                         </div>
+                      </div>
+                      <div className="space-y-1.5">
+                         <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider ml-1">Postcode</label>
+                         <div className="relative group">
+                            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-900 transition-colors" />
+                            <input 
+                              type="text" 
+                              value={postcode} 
+                              onChange={(e) => setPostcode(e.target.value)} 
+                              placeholder="33901" 
+                              className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white focus:border-blue-900 transition-all text-sm" 
+                            />
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-12 pt-10 border-t border-slate-50 flex flex-col sm:flex-row justify-end gap-5 items-center">
+                 {saveSuccess && (
+                   <span className="text-emerald-600 font-bold flex items-center gap-2 animate-fade-in text-xs uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 mb-2 sm:mb-0">
+                     <CheckCircle2 className="w-4 h-4" /> Profile Updated
+                   </span>
+                 )}
+                 <div className="flex gap-4 w-full sm:w-auto">
+                    <button 
+                      onClick={() => navigate('/dashboard')} 
+                      className="flex-1 sm:flex-none px-10 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all text-sm active:scale-95"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleSaveChanges} 
+                      disabled={isSaving} 
+                      className="flex-1 sm:flex-none px-10 py-4 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 min-w-[200px] text-sm active:scale-95 disabled:bg-slate-400 disabled:shadow-none"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : saveSuccess ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Saved Successfully
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Complete Profile
+                        </>
+                      )}
+                    </button>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-8 animate-fade-in no-scrollbar pb-20">
+        <div className="bg-gradient-to-r from-blue-900 to-sky-800 rounded-[32px] p-8 lg:p-12 text-white relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 p-8 opacity-20 pointer-events-none">
+            <ShieldCheck className="w-48 h-48" />
+          </div>
+          <div className="relative z-10">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4 brand-font">Welcome back, {user.fullName.split(' ')[0]}!</h2>
+            <p className="text-blue-100 text-lg mb-8 max-w-xl">
+              {isFreeTier 
+                ? "You are currently exploring our Free Tier. Upgrade to access our full suite of advocacy tools." 
+                : "Your account protection is active. Manage your warranties or file claims below."}
+            </p>
+            <div className="flex flex-wrap gap-4">
+              {isFreeTier ? (
+                <button 
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="px-8 py-4 bg-sky-500 text-white rounded-full font-bold hover:bg-sky-400 transition-all flex items-center gap-2 shadow-lg shadow-sky-500/20 active:scale-95"
+                >
+                  Upgrade to Premium <Zap className="w-5 h-5 fill-current" />
+                </button>
+              ) : (
+                <>
+                  <button onClick={() => setIsAddingClaim(true)} className="px-6 py-3 bg-white text-blue-900 rounded-full font-bold hover:bg-sky-400 hover:text-white transition-all flex items-center gap-2 active:scale-95">
+                    <Plus className="w-5 h-5" /> File New Claim
+                  </button>
+                  <button onClick={() => setIsAddingWarranty(true)} className="px-6 py-3 bg-blue-800/50 border border-blue-700 text-white rounded-full font-bold hover:bg-blue-800 transition-all flex items-center gap-2 active:scale-95">
+                    <Upload className="w-5 h-5" /> Upload Warranty
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {stats.map((stat, i) => (
+            <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-md transition-shadow">
+              <div className={`w-14 h-14 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center shrink-0`}>
+                <stat.icon className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <section className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-[40px] p-8 lg:p-12 text-white shadow-2xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
+                 <Gift className="w-64 h-64" />
+               </div>
+               <div className="relative z-10">
+                 <div className="flex items-center gap-3 mb-6">
+                   <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl">
+                     <Share2 className="w-6 h-6 text-white" />
+                   </div>
+                   <h3 className="text-2xl font-bold brand-font">Invite & Earn 20%</h3>
+                 </div>
+                 <p className="text-emerald-50 mb-10 max-w-lg leading-relaxed text-lg">
+                   Help your neighbors protect their warranties and earn <span className="font-bold underline">20% commission</span> ($100 per annual signup).
+                 </p>
+                 <div className="flex flex-col sm:flex-row gap-4">
+                   <button 
+                    onClick={handleCopyLink}
+                    className="flex-grow py-5 bg-white text-emerald-700 rounded-3xl font-bold text-lg hover:bg-emerald-50 transition-all shadow-xl shadow-emerald-900/10 flex items-center justify-center gap-3 active:scale-95"
+                   >
+                     {copied ? <CheckCircle2 className="w-6 h-6" /> : <Copy className="w-6 h-6" />}
+                     {copied ? 'Link Copied' : 'Get My Referral Link'}
+                   </button>
+                   <button 
+                    onClick={() => navigate('/dashboard/rewards')}
+                    className="px-8 py-5 bg-emerald-800/40 border border-emerald-400/30 text-white rounded-3xl font-bold hover:bg-emerald-800 transition-all backdrop-blur-sm active:scale-95"
+                   >
+                     View Rewards
+                   </button>
+                 </div>
+               </div>
+            </section>
+          </div>
+
+          <div className="space-y-8">
+            <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-5"><Zap className="w-24 h-24 text-blue-900" /></div>
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Current Plan</h4>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-sky-100 text-sky-600 rounded-xl flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">{isFreeTier ? "Free Tier" : "Premium Member"}</h3>
+              </div>
+              <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+                {isFreeTier 
+                  ? "Upgrade to Premium Advocacy for unlimited claim filings and full home/auto protection."
+                  : "You have full access to our advocacy team. We're fighting for you!"}
+              </p>
+              <button onClick={() => isFreeTier ? setShowUpgradeModal(true) : navigate('/services')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-900 transition-colors shadow-lg active:scale-95">
+                {isFreeTier ? "View Upgrade Options" : "Manage Subscription"}
+              </button>
+            </div>
+            
+            <div className="bg-blue-50 p-8 rounded-[32px] border border-blue-100 group">
+              <h4 className="text-sm font-bold text-blue-900 mb-4">Need Help?</h4>
+              <p className="text-xs text-slate-600 mb-6 leading-relaxed">Our experts are available to guide you through any warranty dispute or question.</p>
+              <button onClick={() => navigate('/contact')} className="w-full py-3 bg-white text-blue-900 rounded-xl text-xs font-bold hover:bg-blue-900 hover:text-white transition-all shadow-sm active:scale-95">Contact Advocate</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {renderContent()}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white w-full max-w-lg rounded-[48px] shadow-2xl p-12 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><Zap className="w-48 h-48 text-blue-900" /></div>
+            <button onClick={() => setShowUpgradeModal(false)} className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all"><X className="w-6 h-6" /></button>
+            <div className="text-center relative z-10">
+              <div className="w-20 h-20 bg-sky-100 text-sky-600 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-bounce-slow"><ShieldCheck className="w-10 h-10" /></div>
+              <h3 className="text-3xl font-bold text-slate-900 brand-font mb-4">Upgrade to Premium</h3>
+              <p className="text-slate-500 text-lg mb-10 leading-relaxed">Unlock unlimited claim filings, full document storage, and priority professional advocacy for only <b>$49.99/mo</b>.</p>
+              <div className="space-y-4 mb-10 text-left px-4">
+                 {['Unlimited Home & Auto Claims', 'Professional Advocacy Team', 'Lifetime Document Vault', 'Real-time Claim Tracking'].map((feat, i) => (
+                   <div key={i} className="flex items-center gap-3 text-slate-700 font-medium"><CheckCircle2 className="w-5 h-5 text-green-500" /> {feat}</div>
+                 ))}
+              </div>
+              <button onClick={() => { setIsFreeTier(false); setShowUpgradeModal(false); }} className="w-full py-5 bg-blue-900 text-white rounded-3xl font-bold text-lg hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 mb-4 active:scale-95">Upgrade Now</button>
+              <button onClick={() => setShowUpgradeModal(false)} className="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition-colors active:scale-95">Maybe Later</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isAddingWarranty && <AddWarrantyModal onClose={() => setIsAddingWarranty(false)} />}
+      {isAddingClaim && <AddClaimModal user={user} onClose={() => setIsAddingClaim(false)} onAddClaim={addClaim} />}
+    </>
+  );
+};
+
+const AddWarrantyModal = ({ onClose }: { onClose: () => void }) => (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+    <div className="bg-white w-full max-w-lg rounded-[40px] shadow-2xl p-10 relative">
+      <button onClick={onClose} className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all"><X className="w-6 h-6" /></button>
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-blue-50 text-blue-900 rounded-2xl flex items-center justify-center mx-auto mb-6"><Upload className="w-8 h-8" /></div>
+        <h3 className="text-2xl font-bold text-slate-900 brand-font">Upload Warranty</h3>
+        <p className="text-slate-500">Digitize your contract for lifetime protection.</p>
+      </div>
+      <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); onClose(); }}>
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Title</label>
+          <input type="text" placeholder="e.g. 2021 Ford F-150 Warranty" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" required />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Type</label>
+            <select className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10"><option>Auto</option><option>Home</option></select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Expiration</label>
+            <input type="date" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" />
+          </div>
+        </div>
+        <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group">
+          <Upload className="w-8 h-8 mx-auto mb-4 text-slate-300 group-hover:text-blue-900 group-hover:scale-110 transition-all" />
+          <p className="text-sm font-bold text-slate-500">Click to upload PDF or Photo</p>
+          <p className="text-xs text-slate-400">Max file size 10MB</p>
+        </div>
+        <button type="submit" className="w-full py-5 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 active:scale-95">Save to Vault</button>
+      </form>
+    </div>
+  </div>
+);
+
+interface AddClaimModalProps {
+  user: UserProfile;
+  onClose: () => void;
+  onAddClaim: (claim: Claim) => void;
+}
+
+const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
+  const [step, setStep] = useState(1);
+  const [selectedType, setSelectedType] = useState<ClaimType | null>(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+
+  const claimTypes = [
+    { type: ClaimType.HOME, title: 'Home Warranty Claim', icon: HomeIcon, color: 'text-blue-600', bg: 'bg-blue-50', desc: 'Broken AC, plumbing issues, or appliance repairs.' },
+    { type: ClaimType.AUTO, title: 'Auto Warranty Claim', icon: Car, color: 'text-sky-600', bg: 'bg-sky-50', desc: 'Engine trouble, transmission, or electronic failures.' },
+    { type: ClaimType.BUYING_ASSISTANCE, title: 'Auto Buying Assistance', icon: ShoppingBag, color: 'text-amber-600', bg: 'bg-amber-50', desc: 'Expert help negotiating your next vehicle purchase.' },
+  ];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedType) return;
+    const newClaim: Claim = { id: Math.random().toString(36).substr(2, 9), userId: user.id, type: selectedType, status: ClaimStatus.PENDING, title: title || `${selectedType.replace('_', ' ')} Advocacy Request`, description: description, documents: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    onAddClaim(newClaim);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl p-10 relative max-h-[90vh] overflow-y-auto no-scrollbar">
+        <button onClick={onClose} className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all"><X className="w-6 h-6" /></button>
+        {step === 1 ? (
+          <div className="animate-fade-in">
+            <div className="text-center mb-10">
+              <div className="w-16 h-16 bg-blue-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-6"><ClipboardCheck className="w-8 h-8" /></div>
+              <h3 className="text-3xl font-bold text-slate-900 brand-font mb-2">Start a New Claim</h3>
+              <p className="text-slate-500">What do you need advocacy for today?</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {claimTypes.map((item) => (
+                <button key={item.type} onClick={() => { setSelectedType(item.type); setStep(2); }} className="p-6 text-left rounded-3xl border-2 border-slate-50 bg-slate-50 hover:border-blue-900 hover:bg-white transition-all group active:scale-95">
+                  <div className={`w-12 h-12 ${item.bg} ${item.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}><item.icon className="w-6 h-6" /></div>
+                  <h4 className="font-bold text-slate-900 mb-1">{item.title}</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="animate-fade-in">
+             <button onClick={() => setStep(1)} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-900 mb-6 transition-colors group"><ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to selection</button>
+             <div className="mb-8"><h3 className="text-2xl font-bold text-slate-900 brand-font">Claim Details</h3><p className="text-slate-500">Subject: <span className="text-blue-900 font-bold">{selectedType?.replace('_', ' ')}</span></p></div>
+             <form className="space-y-6" onSubmit={handleSubmit}>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Issue Subject</label>
+                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Denied transmission repair" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Detailed Description</label>
+                <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tell us what happened..." className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 resize-none" required></textarea>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                 <button type="button" className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95"><FileText className="w-5 h-5" /> Attach Docs</button>
+                 <button type="button" className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95"><Camera className="w-5 h-5" /> Add Photos</button>
+              </div>
+              <button type="submit" className="w-full py-5 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 active:scale-95">Submit Claim for Review <ArrowRight className="w-5 h-5" /></button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default UserDashboard;
