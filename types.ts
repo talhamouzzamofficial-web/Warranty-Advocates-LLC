@@ -15,7 +15,14 @@ export enum ClaimStatus {
 export enum ClaimType {
   HOME = 'HOME',
   AUTO = 'AUTO',
-  BUYING_ASSISTANCE = 'BUYING_ASSISTANCE'
+  BUYING_ASSISTANCE = 'BUYING_ASSISTANCE',
+  RENOVATION = 'RENOVATION'
+}
+
+export enum ClaimPriority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH'
 }
 
 export interface UserProfile {
@@ -52,6 +59,7 @@ export interface Claim {
   userId: string;
   type: ClaimType;
   status: ClaimStatus;
+  priority: ClaimPriority;
   title: string;
   description: string;
   amount?: number;

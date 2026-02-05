@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShieldCheck, Mail, User, Lock, ArrowRight, MapPin, Phone, Hash, Check, Loader2 } from 'lucide-react';
+import { ShieldCheck, Mail, User, Lock, ArrowRight, MapPin, Phone, Hash, Check, Loader2, Map } from 'lucide-react';
 import { UserRole, UserProfile } from '../types';
 
 interface SignupPageProps {
@@ -176,14 +176,20 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">State</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">
+                      {formData.role === UserRole.PARTNER ? 'State of Application' : 'State'}
+                    </label>
                     <div className="relative">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      {formData.role === UserRole.PARTNER ? (
+                        <Map className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      ) : (
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      )}
                       <input 
                         type="text" 
                         value={formData.state}
                         onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                        placeholder="FL" 
+                        placeholder={formData.role === UserRole.PARTNER ? "e.g. Florida" : "FL"} 
                         className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all text-sm font-medium"
                       />
                     </div>

@@ -57,6 +57,7 @@ interface TerritoryCustomer {
   phone: string;
   address: string;
   plan: 'FREE' | 'BASIC' | 'PREMIUM';
+  claimType: 'HOME' | 'AUTO';
   status: 'Active' | 'Pending';
   registrationDate: string;
   documents: CustomerDocument[];
@@ -107,10 +108,9 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
   const [copied, setCopied] = useState(false);
 
   // Mock Claims for territory
-  // Fix: Explicitly type the array literal to TerritoryClaim[] to prevent 'type' widening to 'string'
   const territoryClaims: TerritoryClaim[] = customers.length > 0 ? ([
-    { id: 'CLM-001', customerName: customers[0].name, type: 'HOME', status: ClaimStatus.PROCESSING, date: '2025-05-15', description: 'HVAC repair request.' },
-    { id: 'CLM-002', customerName: customers[0].name, type: 'AUTO', status: ClaimStatus.PENDING, date: '2025-05-18', description: 'Transmission issues.' }
+    { id: 'CLM-001', customerName: customers[0].name, type: customers[0].claimType, status: ClaimStatus.PROCESSING, date: '2025-05-15', description: 'Initial advocacy request.' },
+    { id: 'CLM-002', customerName: customers[0].name, type: customers[0].claimType === 'HOME' ? 'AUTO' : 'HOME', status: ClaimStatus.PENDING, date: '2025-05-18', description: 'Secondary inquiry.' }
   ] as TerritoryClaim[]).filter((_, i) => i < customers.length) : [];
 
   // Mock Commission Data
@@ -140,6 +140,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
       phone: formData.get('phone') as string,
       address: formData.get('address') as string,
       plan: formData.get('plan') as any,
+      claimType: formData.get('claimType') as any,
       status: 'Active',
       registrationDate: new Date().toISOString().split('T')[0],
       documents: []
@@ -430,6 +431,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
                     <tr className="bg-slate-50">
                       <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Customer</th>
                       <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Plan</th>
+                      <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Type</th>
                       <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Docs</th>
                       <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                     </tr>
@@ -446,6 +448,12 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
                         <td className="px-8 py-6">
                           <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${customer.plan === 'PREMIUM' ? 'bg-sky-100 text-sky-700' : customer.plan === 'BASIC' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
                             {customer.plan}
+                          </span>
+                        </td>
+                        <td className="px-8 py-6 text-center">
+                          <span className="text-xs font-bold text-slate-600 flex items-center justify-center gap-1.5">
+                            {customer.claimType === 'HOME' ? <HomeIcon className="w-3.5 h-3.5" /> : <Car className="w-3.5 h-3.5" />}
+                            {customer.claimType}
                           </span>
                         </td>
                         <td className="px-8 py-6 text-center">
@@ -471,7 +479,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
         </>
       )}
 
-      {/* Modals remain the same but use territoryClaim data where applicable */}
+      {/* Add Customer Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
           <div className="bg-white w-full max-w-lg rounded-[40px] shadow-2xl p-10 relative">
@@ -500,13 +508,22 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
                   <input name="phone" type="tel" required placeholder="239-000-0000" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Plan Level</label>
-                <select name="plan" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700">
-                  <option value="FREE">Free Tier</option>
-                  <option value="BASIC">Basic Advocacy ($20 Share)</option>
-                  <option value="PREMIUM">Premium Advocacy ($100 Share)</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Plan Level</label>
+                  <select name="plan" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700">
+                    <option value="FREE">Free Tier</option>
+                    <option value="BASIC">Basic ($20 Share)</option>
+                    <option value="PREMIUM">Premium ($100 Share)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Primary Claim Type</label>
+                  <select name="claimType" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700">
+                    <option value="HOME">Home Warranty</option>
+                    <option value="AUTO">Auto Warranty</option>
+                  </select>
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Home Address</label>
@@ -524,6 +541,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
         </div>
       )}
 
+      {/* Customer Detail Modal */}
       {selectedCustomer && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in overflow-y-auto">
           <div className="bg-white w-full max-w-3xl rounded-[40px] shadow-2xl overflow-hidden my-8 relative">
@@ -536,9 +554,12 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
                   <span className="flex items-center gap-1.5"><Smartphone className="w-4 h-4 text-sky-400" /> {selectedCustomer.phone}</span>
                 </div>
               </div>
-              <span className={`px-4 py-2 rounded-xl text-xs font-black tracking-widest uppercase border border-white/20 ${selectedCustomer.plan === 'PREMIUM' ? 'bg-sky-500 text-white' : 'bg-white/10 text-white'}`}>
-                {selectedCustomer.plan} Plan
-              </span>
+              <div className="flex flex-col items-end gap-2">
+                <span className={`px-4 py-2 rounded-xl text-xs font-black tracking-widest uppercase border border-white/20 ${selectedCustomer.plan === 'PREMIUM' ? 'bg-sky-500 text-white' : 'bg-white/10 text-white'}`}>
+                  {selectedCustomer.plan} Plan
+                </span>
+                <span className="text-[10px] font-bold text-sky-300 uppercase tracking-[0.2em]">{selectedCustomer.claimType} FOCUS</span>
+              </div>
             </div>
             <div className="p-8 lg:p-12 grid grid-cols-1 md:grid-cols-3 gap-12">
               <div className="md:col-span-2 space-y-8">

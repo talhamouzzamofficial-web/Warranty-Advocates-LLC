@@ -43,9 +43,11 @@ import {
   Activity,
   ArrowUpRight,
   Loader2,
-  CreditCard
+  CreditCard,
+  Hammer,
+  AlertCircle
 } from 'lucide-react';
-import { UserProfile, ClaimStatus, ClaimType, Warranty, Claim } from '../../types';
+import { UserProfile, ClaimStatus, ClaimType, Warranty, Claim, ClaimPriority } from '../../types';
 import { PRICING, COMPANY_INFO } from '../../constants';
 
 interface UserDashboardProps {
@@ -295,7 +297,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
     }
 
     if (path === '/dashboard/claims') {
-      return isFreeTier ? <LockedPage title="Claim Advocacy" /> : (
+      return (
         <div className="space-y-8 animate-fade-in">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
@@ -424,7 +426,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                       <div className="space-y-1.5">
                          <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider ml-1">Postcode</label>
                          <div className="relative group">
-                            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-900 transition-colors" />
+                            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input 
                               type="text" 
                               value={postcode} 
@@ -824,9 +826,11 @@ const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
   const [selectedType, setSelectedType] = useState<ClaimType | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<ClaimPriority>(ClaimPriority.MEDIUM);
 
   const claimTypes = [
     { type: ClaimType.HOME, title: 'Home Warranty Claim', icon: HomeIcon, color: 'text-blue-600', bg: 'bg-blue-50', desc: 'Broken AC, plumbing issues, or appliance repairs.' },
+    { type: ClaimType.RENOVATION, title: 'Home Renovation Claim', icon: Hammer, color: 'text-indigo-600', bg: 'bg-indigo-50', desc: 'Incomplete projects, contractor disputes, or material defects.' },
     { type: ClaimType.AUTO, title: 'Auto Warranty Claim', icon: Car, color: 'text-sky-600', bg: 'bg-sky-50', desc: 'Engine trouble, transmission, or electronic failures.' },
     { type: ClaimType.BUYING_ASSISTANCE, title: 'Auto Buying Assistance', icon: ShoppingBag, color: 'text-amber-600', bg: 'bg-amber-50', desc: 'Expert help negotiating your next vehicle purchase.' },
   ];
@@ -834,9 +838,32 @@ const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedType) return;
-    const newClaim: Claim = { id: Math.random().toString(36).substr(2, 9), userId: user.id, type: selectedType, status: ClaimStatus.PENDING, title: title || `${selectedType.replace('_', ' ')} Advocacy Request`, description: description, documents: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const newClaim: Claim = { 
+      id: Math.random().toString(36).substr(2, 9), 
+      userId: user.id, 
+      type: selectedType, 
+      status: ClaimStatus.PENDING, 
+      priority: priority,
+      title: title || `${selectedType.replace('_', ' ')} Advocacy Request`, 
+      description: description, 
+      documents: [], 
+      createdAt: new Date().toISOString(), 
+      updatedAt: new Date().toISOString() 
+    };
     onAddClaim(newClaim);
     onClose();
+  };
+
+  const getPriorityHint = () => {
+    if (selectedType === ClaimType.HOME || selectedType === ClaimType.RENOVATION) {
+      switch (priority) {
+        case ClaimPriority.LOW: return "General cosmetic issues or non-essential feature repairs.";
+        case ClaimPriority.MEDIUM: return "Functional appliance issues or ongoing contractor delays.";
+        case ClaimPriority.HIGH: return "Emergency: No HVAC/Water, active leaks, or safety hazards.";
+        default: return "";
+      }
+    }
+    return "";
   };
 
   return (
@@ -863,21 +890,57 @@ const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
         ) : (
           <div className="animate-fade-in">
              <button onClick={() => setStep(1)} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-900 mb-6 transition-colors group"><ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to selection</button>
-             <div className="mb-8"><h3 className="text-2xl font-bold text-slate-900 brand-font">Claim Details</h3><p className="text-slate-500">Subject: <span className="text-blue-900 font-bold">{selectedType?.replace('_', ' ')}</span></p></div>
+             <div className="mb-8">
+               <h3 className="text-2xl font-bold text-slate-900 brand-font">Claim Details</h3>
+               <p className="text-slate-500">Advocacy Type: <span className="text-blue-900 font-bold uppercase tracking-tight">{selectedType?.replace('_', ' ')}</span></p>
+             </div>
              <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Issue Subject</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Denied transmission repair" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" required />
+                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Denied HVAC replacement claim" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" required />
               </div>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Priority Level</label>
+                  {priority === ClaimPriority.HIGH && (
+                    <span className="text-[10px] font-black text-red-500 uppercase flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> Emergency Focus
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Low', value: ClaimPriority.LOW, color: 'border-emerald-100 text-emerald-600 bg-emerald-50 hover:bg-emerald-100', active: 'bg-emerald-500 text-white ring-4 ring-emerald-500/20 border-emerald-500' },
+                    { label: 'Medium', value: ClaimPriority.MEDIUM, color: 'border-amber-100 text-amber-600 bg-amber-100 hover:bg-amber-100', active: 'bg-amber-500 text-white ring-4 ring-amber-500/20 border-amber-500' },
+                    { label: 'High', value: ClaimPriority.HIGH, color: 'border-red-100 text-red-600 bg-red-50 hover:bg-red-100', active: 'bg-red-500 text-white ring-4 ring-red-500/20 border-red-500' }
+                  ].map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setPriority(p.value)}
+                      className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${priority === p.value ? p.active : p.color}`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-500 italic mt-2 px-1">
+                  {getPriorityHint()}
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Detailed Description</label>
-                <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tell us what happened..." className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 resize-none" required></textarea>
+                <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Please provide specific details about the issue and any communications you've had with the warranty provider..." className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 resize-none" required></textarea>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                 <button type="button" className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95"><FileText className="w-5 h-5" /> Attach Docs</button>
-                 <button type="button" className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95"><Camera className="w-5 h-5" /> Add Photos</button>
+                 <button type="button" className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95 transition-colors"><FileText className="w-5 h-5" /> Attach Contracts</button>
+                 <button type="button" className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95 transition-colors"><Camera className="w-5 h-5" /> Evidence Photos</button>
               </div>
-              <button type="submit" className="w-full py-5 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 active:scale-95">Submit Claim for Review <ArrowRight className="w-5 h-5" /></button>
+              <button type="submit" className="w-full py-5 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 active:scale-95 group">
+                Initialize Professional Advocacy <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
             </form>
           </div>
         )}
