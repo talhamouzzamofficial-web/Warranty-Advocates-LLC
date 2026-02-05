@@ -52,6 +52,7 @@ interface CustomerDocument {
 
 interface TerritoryCustomer {
   id: string;
+  partnerId: string;
   name: string;
   email: string;
   phone: string;
@@ -95,7 +96,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
     else if (location.pathname === '/dashboard/customers') setActiveTab('CUSTOMERS');
   }, [location.pathname]);
   
-  // Persistence for demo purposes
+  // Persistence for demo purposes - Also saved globally for Admin
   const [customers, setCustomers] = useState<TerritoryCustomer[]>(() => {
     const saved = localStorage.getItem(`wa_partner_customers_${user.id}`);
     return saved ? JSON.parse(saved) : [];
@@ -135,6 +136,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
     const formData = new FormData(e.currentTarget);
     const newCustomer: TerritoryCustomer = {
       id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+      partnerId: user.id,
       name: formData.get('name') as string,
       email: formData.get('email') as string,
       phone: formData.get('phone') as string,
@@ -146,7 +148,27 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
       documents: []
     };
     await new Promise(resolve => setTimeout(resolve, 1000));
-    setCustomers(prev => [newCustomer, ...prev]);
+    
+    const updated = [newCustomer, ...customers];
+    setCustomers(updated);
+    
+    // SYNC GLOBALLY FOR ADMIN
+    const globalCustomers = JSON.parse(localStorage.getItem('wa_global_customers') || '[]');
+    globalCustomers.unshift({ ...newCustomer, partnerName: user.fullName });
+    localStorage.setItem('wa_global_customers', JSON.stringify(globalCustomers));
+
+    // Log activity for Admin
+    const activities = JSON.parse(localStorage.getItem('wa_global_activities') || '[]');
+    activities.unshift({
+      id: Math.random().toString(36).substr(2, 9),
+      userId: user.id,
+      userName: user.fullName,
+      action: 'PARTNER_REGISTER_CUSTOMER',
+      detail: `Partner registered new customer: ${newCustomer.name} (${newCustomer.plan})`,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('wa_global_activities', JSON.stringify(activities.slice(0, 50)));
+
     setIsSubmitting(false);
     setShowAddModal(false);
   };

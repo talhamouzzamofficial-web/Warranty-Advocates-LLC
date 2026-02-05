@@ -71,9 +71,13 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
   const [paymentStep, setPaymentStep] = useState<'CARD' | 'SUCCESS'>('CARD');
   const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
 
-  // State for content
+  // State for content - Persist globally for Admin visibility
   const [warranties, setWarranties] = useState<Warranty[]>([]);
-  const [claims, setClaims] = useState<Claim[]>([]);
+  const [claims, setClaims] = useState<Claim[]>(() => {
+    const globalClaims = JSON.parse(localStorage.getItem('wa_global_claims') || '[]');
+    return globalClaims.filter((c: Claim) => c.userId === user.id);
+  });
+  
   const [isAddingWarranty, setIsAddingWarranty] = useState(false);
   const [isAddingClaim, setIsAddingClaim] = useState(false);
   
@@ -151,6 +155,19 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
         phone
       });
     }
+    
+    // Log activity for Admin
+    const activities = JSON.parse(localStorage.getItem('wa_global_activities') || '[]');
+    activities.unshift({
+      id: Math.random().toString(36).substr(2, 9),
+      userId: user.id,
+      userName: fullName,
+      action: 'PROFILE_UPDATE',
+      detail: 'Updated personal profile details',
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('wa_global_activities', JSON.stringify(activities.slice(0, 50)));
+
     setIsSaving(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
@@ -168,10 +185,40 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
     if (onUpdateProfile) {
       onUpdateProfile({ plan: 'PREMIUM' });
     }
+
+    // Log activity for Admin
+    const activities = JSON.parse(localStorage.getItem('wa_global_activities') || '[]');
+    activities.unshift({
+      id: Math.random().toString(36).substr(2, 9),
+      userId: user.id,
+      userName: user.fullName,
+      action: 'SUBSCRIPTION_UPGRADE',
+      detail: `Upgraded to PREMIUM Advocacy plan (${selectedUpgradePlan})`,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('wa_global_activities', JSON.stringify(activities.slice(0, 50)));
   };
 
   const addClaim = (newClaim: Claim) => {
-    setClaims([newClaim, ...claims]);
+    const updatedClaims = [newClaim, ...claims];
+    setClaims(updatedClaims);
+    
+    // Persist to global claims for Admin
+    const globalClaims = JSON.parse(localStorage.getItem('wa_global_claims') || '[]');
+    globalClaims.unshift({ ...newClaim, userName: user.fullName }); // Add userName for admin ease
+    localStorage.setItem('wa_global_claims', JSON.stringify(globalClaims));
+
+    // Log activity for Admin
+    const activities = JSON.parse(localStorage.getItem('wa_global_activities') || '[]');
+    activities.unshift({
+      id: Math.random().toString(36).substr(2, 9),
+      userId: user.id,
+      userName: user.fullName,
+      action: 'NEW_CLAIM',
+      detail: `Filed a ${newClaim.type} claim: ${newClaim.title}`,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('wa_global_activities', JSON.stringify(activities.slice(0, 50)));
   };
 
   const LockedPage = ({ title }: { title: string }) => (
@@ -313,12 +360,54 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
               <Plus className="w-5 h-5" /> New Claim Request
             </button>
           </div>
-          <div className="bg-white p-20 rounded-[40px] border border-dashed border-slate-200 text-center">
-             <ClipboardCheck className="w-16 h-16 text-slate-200 mx-auto mb-6" />
-             <h3 className="text-xl font-bold text-slate-900">No Open Claims</h3>
-             <p className="text-slate-500 mb-8">When we file a claim on your behalf, it will appear here.</p>
-             <button onClick={() => setIsAddingClaim(true)} className="text-blue-900 font-bold hover:underline">Start Advocacy Case</button>
-          </div>
+          {claims.length > 0 ? (
+            <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
+               <div className="p-8 border-b border-slate-100">
+                 <h3 className="text-xl font-bold text-slate-900">Active Claim Queue</h3>
+               </div>
+               <div className="divide-y divide-slate-50">
+                 {claims.map((claim) => (
+                    <div key={claim.id} className="p-8 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-6">
+                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                           claim.type === ClaimType.HOME ? 'bg-blue-100 text-blue-600' :
+                           claim.type === ClaimType.RENOVATION ? 'bg-indigo-100 text-indigo-600' :
+                           claim.type === ClaimType.AUTO ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'
+                         }`}>
+                           {claim.type === ClaimType.HOME ? <HomeIcon className="w-7 h-7" /> :
+                            claim.type === ClaimType.AUTO ? <Car className="w-7 h-7" /> : <ClipboardCheck className="w-7 h-7" />}
+                         </div>
+                         <div>
+                            <p className="font-bold text-slate-900 text-lg">{claim.title}</p>
+                            <div className="flex items-center gap-3 text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">
+                               <span>ID: {claim.id}</span>
+                               <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                               <span>{new Date(claim.createdAt).toLocaleDateString()}</span>
+                            </div>
+                         </div>
+                      </div>
+                      <div className="text-right">
+                         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border ${
+                           claim.status === ClaimStatus.PENDING ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                           claim.status === ClaimStatus.PROCESSING ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                           'bg-emerald-50 text-emerald-600 border-emerald-100'
+                         }`}>
+                           {claim.status}
+                         </span>
+                         <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase">Priority: {claim.priority}</p>
+                      </div>
+                    </div>
+                 ))}
+               </div>
+            </div>
+          ) : (
+            <div className="bg-white p-20 rounded-[40px] border border-dashed border-slate-200 text-center">
+               <ClipboardCheck className="w-16 h-16 text-slate-200 mx-auto mb-6" />
+               <h3 className="text-xl font-bold text-slate-900">No Open Claims</h3>
+               <p className="text-slate-500 mb-8">When we file a claim on your behalf, it will appear here.</p>
+               <button onClick={() => setIsAddingClaim(true)} className="text-blue-900 font-bold hover:underline">Start Advocacy Case</button>
+            </div>
+          )}
         </div>
       );
     }
@@ -869,7 +958,7 @@ const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
     const isHomeRelated = selectedType === ClaimType.HOME || selectedType === ClaimType.RENOVATION;
     
     const newClaim: Claim = { 
-      id: Math.random().toString(36).substr(2, 9), 
+      id: Math.random().toString(36).substr(2, 9).toUpperCase(), 
       userId: user.id, 
       type: selectedType, 
       status: ClaimStatus.PENDING, 
