@@ -45,7 +45,9 @@ import {
   Loader2,
   CreditCard,
   Hammer,
-  AlertCircle
+  AlertCircle,
+  Building2,
+  Trash2
 } from 'lucide-react';
 import { UserProfile, ClaimStatus, ClaimType, Warranty, Claim, ClaimPriority } from '../../types';
 import { PRICING, COMPANY_INFO } from '../../constants';
@@ -827,6 +829,16 @@ const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<ClaimPriority>(ClaimPriority.MEDIUM);
+  
+  // Property Details State
+  const [propertyAddress, setPropertyAddress] = useState('');
+  const [propertyType, setPropertyType] = useState('Single Family');
+  const [isPrimaryResidence, setIsPrimaryResidence] = useState(true);
+
+  // Document Management State
+  const [documents, setDocuments] = useState<{name: string, data: string, type: string}[]>([]);
+  const contractInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const claimTypes = [
     { type: ClaimType.HOME, title: 'Home Warranty Claim', icon: HomeIcon, color: 'text-blue-600', bg: 'bg-blue-50', desc: 'Broken AC, plumbing issues, or appliance repairs.' },
@@ -835,9 +847,27 @@ const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
     { type: ClaimType.BUYING_ASSISTANCE, title: 'Auto Buying Assistance', icon: ShoppingBag, color: 'text-amber-600', bg: 'bg-amber-50', desc: 'Expert help negotiating your next vehicle purchase.' },
   ];
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fileTypeLabel: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDocuments(prev => [...prev, { name: file.name, data: reader.result as string, type: fileTypeLabel }]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedType) return;
+    
+    const isHomeRelated = selectedType === ClaimType.HOME || selectedType === ClaimType.RENOVATION;
+    
     const newClaim: Claim = { 
       id: Math.random().toString(36).substr(2, 9), 
       userId: user.id, 
@@ -846,9 +876,14 @@ const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
       priority: priority,
       title: title || `${selectedType.replace('_', ' ')} Advocacy Request`, 
       description: description, 
-      documents: [], 
+      documents: documents.map(d => d.data), 
       createdAt: new Date().toISOString(), 
-      updatedAt: new Date().toISOString() 
+      updatedAt: new Date().toISOString(),
+      ...(isHomeRelated && {
+        propertyAddress,
+        propertyType,
+        isPrimaryResidence
+      })
     };
     onAddClaim(newClaim);
     onClose();
@@ -895,6 +930,68 @@ const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
                <p className="text-slate-500">Advocacy Type: <span className="text-blue-900 font-bold uppercase tracking-tight">{selectedType?.replace('_', ' ')}</span></p>
              </div>
              <form className="space-y-6" onSubmit={handleSubmit}>
+              
+              {/* Conditional Property Details for Home/Renovation */}
+              {(selectedType === ClaimType.HOME || selectedType === ClaimType.RENOVATION) && (
+                <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-[32px] space-y-6">
+                  <h4 className="text-[10px] font-black text-blue-900 uppercase tracking-widest flex items-center gap-2">
+                    <Building2 className="w-3.5 h-3.5" /> Property Verification
+                  </h4>
+                  
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Property Address</label>
+                    <div className="relative group">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-900" />
+                      <input 
+                        type="text" 
+                        value={propertyAddress} 
+                        onChange={(e) => setPropertyAddress(e.target.value)} 
+                        placeholder="Full street address, city, state" 
+                        className="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm" 
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Property Type</label>
+                      <select 
+                        value={propertyType} 
+                        onChange={(e) => setPropertyType(e.target.value)}
+                        className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-medium"
+                      >
+                        <option>Single Family</option>
+                        <option>Condo</option>
+                        <option>Townhome</option>
+                        <option>Multi-Family (2-4 Units)</option>
+                        <option>Mobile Home</option>
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Primary Residence?</label>
+                      <div className="flex bg-white p-1 rounded-xl border border-slate-200">
+                        <button 
+                          type="button" 
+                          onClick={() => setIsPrimaryResidence(true)}
+                          className={`flex-1 py-3 rounded-lg text-xs font-bold transition-all ${isPrimaryResidence ? 'bg-blue-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                          Yes
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setIsPrimaryResidence(false)}
+                          className={`flex-1 py-3 rounded-lg text-xs font-bold transition-all ${!isPrimaryResidence ? 'bg-blue-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                          No
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Issue Subject</label>
                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Denied HVAC replacement claim" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" required />
@@ -934,10 +1031,58 @@ const AddClaimModal = ({ user, onClose, onAddClaim }: AddClaimModalProps) => {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Detailed Description</label>
                 <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Please provide specific details about the issue and any communications you've had with the warranty provider..." className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 resize-none" required></textarea>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <button type="button" className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95 transition-colors"><FileText className="w-5 h-5" /> Attach Contracts</button>
-                 <button type="button" className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95 transition-colors"><Camera className="w-5 h-5" /> Evidence Photos</button>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                   <button 
+                    type="button" 
+                    onClick={() => contractInputRef.current?.click()}
+                    className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95 transition-colors"
+                   >
+                     <FileText className="w-5 h-5 text-blue-500" /> Attach Contracts
+                   </button>
+                   <button 
+                    type="button" 
+                    onClick={() => photoInputRef.current?.click()}
+                    className="py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-2 active:scale-95 transition-colors"
+                   >
+                     <Camera className="w-5 h-5 text-sky-500" /> Evidence Photos
+                   </button>
+                   <input type="file" ref={contractInputRef} className="hidden" onChange={(e) => handleFileChange(e, 'Contract')} accept=".pdf,.doc,.docx" />
+                   <input type="file" ref={photoInputRef} className="hidden" onChange={(e) => handleFileChange(e, 'Photo')} accept="image/*" />
+                </div>
+
+                {/* File Attachment List */}
+                {documents.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Evidence Uplink ({documents.length})</label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {documents.map((doc, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl animate-fade-in group">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-white rounded-lg shadow-sm">
+                              {doc.type === 'Contract' ? <FileText className="w-4 h-4 text-blue-600" /> : <Camera className="w-4 h-4 text-sky-600" />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-900 truncate max-w-[240px]">{doc.name}</p>
+                              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">{doc.type}</p>
+                            </div>
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => removeFile(idx)} 
+                            className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                            title="Remove attachment"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
               <button type="submit" className="w-full py-5 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 active:scale-95 group">
                 Initialize Professional Advocacy <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>

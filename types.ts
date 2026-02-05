@@ -67,6 +67,10 @@ export interface Claim {
   createdAt: string;
   updatedAt: string;
   territoryId?: string;
+  // Property details for Home/Renovation
+  propertyAddress?: string;
+  propertyType?: string;
+  isPrimaryResidence?: boolean;
 }
 
 export interface Territory {
