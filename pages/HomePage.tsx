@@ -211,7 +211,7 @@ const HomePage: React.FC = () => {
                   <CheckCircle2 className="w-4 h-4 text-green-500" /> Warranty Audit
                 </li>
               </ul>
-              <Link to="/signup" className="w-full py-4 border-2 border-slate-200 text-slate-600 text-center rounded-xl font-bold hover:border-blue-900 hover:text-blue-900 transition-colors">
+              <Link to="/auto-buying" className="w-full py-4 border-2 border-slate-200 text-slate-600 text-center rounded-xl font-bold hover:border-blue-900 hover:text-blue-900 transition-colors">
                 Get Expert Help
               </Link>
             </div>

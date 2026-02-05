@@ -44,6 +44,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import AutoClaimFormPage from './pages/AutoClaimFormPage';
 import AdminLoginPage from './pages/AdminLoginPage';
+import AutoBuyingAssistancePage from './pages/AutoBuyingAssistancePage';
 
 // Dashboards
 import UserDashboard from './pages/dashboards/UserDashboard';
@@ -113,6 +114,7 @@ const App: React.FC = () => {
             <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
             <Route path="/signup" element={<SignupPage onLogin={handleLogin} />} />
             <Route path="/auto-claim" element={<AutoClaimFormPage />} />
+            <Route path="/auto-buying" element={<AutoBuyingAssistancePage />} />
             
             {/* Admin Dedicated Entry */}
             <Route path="/staff-login" element={<AdminLoginPage onLogin={handleLogin} />} />

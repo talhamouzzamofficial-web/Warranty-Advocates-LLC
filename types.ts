@@ -33,6 +33,7 @@ export interface UserProfile {
   referredBy?: string;
   totalEarned?: number;
   pendingRewards?: number;
+  plan?: 'FREE' | 'PREMIUM';
 }
 
 export interface Warranty {

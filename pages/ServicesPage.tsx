@@ -104,7 +104,7 @@ const ServicesPage: React.FC = () => {
             <h3 className="text-xl font-bold mb-4 text-slate-900">Auto Buying Assistance</h3>
             <p className="text-sm text-slate-500 mb-6">One-time expert consultation for car buyers.</p>
             <p className="text-2xl font-bold text-slate-900 mb-8">${PRICING.autoBuying}</p>
-            <Link to="/contact" className="text-blue-900 font-bold text-sm hover:underline">Book Now</Link>
+            <Link to="/auto-buying" className="text-blue-900 font-bold text-sm hover:underline">Book Now</Link>
           </div>
 
           {/* Tracking */}
