@@ -62,8 +62,8 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
   const navigate = useNavigate();
   const path = location.pathname;
 
-  // Derive isFreeTier from user profile plan
-  const isFreeTier = user.plan !== 'PREMIUM';
+  // Refined isFreeTier logic: Users are free if plan is 'FREE' or not set.
+  const isFreeTier = !user.plan || user.plan === 'FREE';
   
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -122,7 +122,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
     { label: 'Referral Earnings', value: `$${referralStats.totalEarned.toFixed(2)}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-100' },
   ];
 
-  // Logic to handle restricted claim filing for Free users
+  // Restrict to 1 claim on Free Tier. Trigger Upgrade option if filing more.
   const handleOpenNewClaim = () => {
     if (isFreeTier && claims.length >= 1) {
       setShowUpgradeModal(true);
@@ -190,9 +190,11 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
     setIsProcessingPayment(false);
     setPaymentStep('SUCCESS');
     
-    // Update user profile to Premium
+    const newPlan = selectedUpgradePlan === 'MONTHLY' ? 'BASIC' : 'PREMIUM';
+    
+    // Update user profile to Basic or Premium
     if (onUpdateProfile) {
-      onUpdateProfile({ plan: 'PREMIUM' });
+      onUpdateProfile({ plan: newPlan });
     }
 
     // Log activity for Admin
@@ -202,7 +204,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
       userId: user.id,
       userName: user.fullName,
       action: 'SUBSCRIPTION_UPGRADE',
-      detail: `Upgraded to PREMIUM Advocacy plan (${selectedUpgradePlan})`,
+      detail: `Upgraded to ${newPlan} Advocacy plan (${selectedUpgradePlan})`,
       timestamp: new Date().toISOString()
     });
     localStorage.setItem('wa_global_activities', JSON.stringify(activities.slice(0, 50)));
@@ -237,13 +239,13 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
       </div>
       <h2 className="text-3xl font-bold text-slate-900 mb-4 brand-font">{title} is Locked</h2>
       <p className="text-slate-500 max-w-md mx-auto text-lg mb-10">
-        You are currently on the Free Tier. To manage warranties and file unlimited claims, please upgrade to our Premium Advocacy plan.
+        You are currently on the Free Tier. To manage warranties and file unlimited claims, please upgrade to our professional Advocacy plans.
       </p>
       <button 
         onClick={() => setShowUpgradeModal(true)}
         className="px-10 py-4 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center gap-2 active:scale-95"
       >
-        Upgrade to Premium <Zap className="w-5 h-5 fill-current" />
+        Upgrade & Unlock Vault <Zap className="w-5 h-5 fill-current" />
       </button>
     </div>
   );
@@ -379,14 +381,14 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                        </div>
                        <div>
                          <p className="font-bold text-amber-900">Free Tier Limit Reached</p>
-                         <p className="text-sm text-amber-700">You can only place one claim on the Free Tier. Upgrade to Premium for unlimited advocacy.</p>
+                         <p className="text-sm text-amber-700">You can only place one claim on the Free Tier. Upgrade to an Advocacy plan for unlimited support.</p>
                        </div>
                     </div>
                     <button 
                       onClick={() => setShowUpgradeModal(true)}
                       className="px-6 py-3 bg-blue-900 text-white rounded-xl font-bold text-sm hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/10 shrink-0"
                     >
-                      Upgrade Now
+                      Upgrade Options
                     </button>
                  </div>
                )}
@@ -624,7 +626,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                   onClick={() => setShowUpgradeModal(true)}
                   className="px-8 py-4 bg-sky-500 text-white rounded-full font-bold hover:bg-sky-400 transition-all flex items-center gap-2 shadow-lg shadow-sky-500/20 active:scale-95"
                 >
-                  Upgrade to Premium <Zap className="w-5 h-5 fill-current" />
+                  Upgrade Options <Zap className="w-5 h-5 fill-current" />
                 </button>
               ) : (
                 <>
@@ -697,11 +699,11 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                 <div className="w-10 h-10 bg-sky-100 text-sky-600 rounded-xl flex items-center justify-center">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">{isFreeTier ? "Free Tier" : "Premium Member"}</h3>
+                <h3 className="text-xl font-bold text-slate-900">{user.plan || "Free Tier"}</h3>
               </div>
               <p className="text-sm text-slate-500 mb-8 leading-relaxed">
                 {isFreeTier 
-                  ? "Upgrade to Premium Advocacy for unlimited claim filings and full home/auto protection."
+                  ? "Upgrade to an Advocacy plan for unlimited claim filings and full home/auto protection."
                   : "You have full access to our advocacy team. We're fighting for you!"}
               </p>
               <button onClick={() => isFreeTier ? setShowUpgradeModal(true) : navigate('/services')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-blue-900 transition-colors shadow-lg active:scale-95">
@@ -732,19 +734,48 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
             <button onClick={() => setShowUpgradeModal(false)} className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all"><X className="w-6 h-6" /></button>
             <div className="text-center relative z-10">
               <div className="w-20 h-20 bg-sky-100 text-sky-600 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-bounce-slow"><ShieldCheck className="w-10 h-10" /></div>
-              <h3 className="text-3xl font-bold text-slate-900 brand-font mb-4">Upgrade to Premium</h3>
-              <p className="text-slate-500 text-lg mb-10 leading-relaxed">Unlock unlimited claim filings, full document storage, and priority professional advocacy for only <b>$49.99/mo</b>.</p>
-              <div className="space-y-4 mb-10 text-left px-4">
-                 {['Unlimited Home & Auto Claims', 'Professional Advocacy Team', 'Lifetime Document Vault', 'Real-time Claim Tracking'].map((feat, i) => (
-                   <div key={i} className="flex items-center gap-3 text-slate-700 font-medium"><CheckCircle2 className="w-5 h-5 text-green-500" /> {feat}</div>
+              <h3 className="text-3xl font-bold text-slate-900 brand-font mb-4">Protect Your Rights</h3>
+              <p className="text-slate-500 text-lg mb-10 leading-relaxed">Upgrade to continue filing unlimited claims and unlock your secure Warranty Vault.</p>
+              
+              <div className="space-y-4 mb-10">
+                {/* Monthly Option */}
+                <button 
+                  onClick={() => { setSelectedUpgradePlan('MONTHLY'); setShowUpgradeModal(false); setShowPaymentModal(true); setPaymentStep('CARD'); }}
+                  className="w-full p-6 text-left rounded-3xl border-2 border-slate-100 hover:border-blue-900 transition-all flex justify-between items-center group bg-white hover:bg-blue-50/50"
+                >
+                  <div>
+                    <h4 className="font-bold text-slate-900">Basic Advocacy</h4>
+                    <p className="text-xs text-slate-500">Monthly Protection</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-black text-blue-900">$49.99</p>
+                    <p className="text-[10px] text-slate-400 font-bold">per month</p>
+                  </div>
+                </button>
+
+                {/* Annual Option */}
+                <button 
+                  onClick={() => { setSelectedUpgradePlan('ANNUAL'); setShowUpgradeModal(false); setShowPaymentModal(true); setPaymentStep('CARD'); }}
+                  className="w-full p-6 text-left rounded-3xl border-2 border-sky-200 hover:border-sky-500 transition-all flex justify-between items-center group bg-sky-50/30 hover:bg-sky-50 relative"
+                >
+                  <div className="absolute -top-3 left-6 px-3 py-1 bg-sky-500 text-white text-[9px] font-black uppercase tracking-widest rounded-full">BEST VALUE</div>
+                  <div>
+                    <h4 className="font-bold text-slate-900">Premium Advocacy</h4>
+                    <p className="text-xs text-slate-500">Annual Peace of Mind</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-black text-blue-900">$499</p>
+                    <p className="text-[10px] text-slate-400 font-bold">per year</p>
+                  </div>
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-10 text-left px-4">
+                 {['Unlimited Home & Auto Claims', 'Full Warranty Vault Access', 'Expert Follow-up Team', 'Priority Legal Counsel'].map((feat, i) => (
+                   <div key={i} className="flex items-center gap-3 text-slate-700 text-sm font-medium"><CheckCircle2 className="w-4 h-4 text-green-500" /> {feat}</div>
                  ))}
               </div>
-              <button 
-                onClick={() => { setShowUpgradeModal(false); setShowPaymentModal(true); setPaymentStep('CARD'); }} 
-                className="w-full py-5 bg-blue-900 text-white rounded-3xl font-bold text-lg hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 mb-4 active:scale-95"
-              >
-                Upgrade Now
-              </button>
+
               <button onClick={() => setShowUpgradeModal(false)} className="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition-colors active:scale-95">Maybe Later</button>
             </div>
           </div>
@@ -767,13 +798,13 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                 <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8">
                   <CheckCircle2 className="w-12 h-12" />
                 </div>
-                <h3 className="text-3xl font-bold text-slate-900 brand-font mb-4">Welcome to Premium!</h3>
-                <p className="text-slate-500 mb-8 leading-relaxed">Your account has been successfully upgraded to the {selectedUpgradePlan.toLowerCase()} plan. You now have full access to all advocacy features.</p>
+                <h3 className="text-3xl font-bold text-slate-900 brand-font mb-4">Upgrade Successful!</h3>
+                <p className="text-slate-500 mb-8 leading-relaxed">Your account has been upgraded to the {selectedUpgradePlan.toLowerCase()} advocacy plan. Your Warranty Vault is now unlocked and you can file unlimited claims.</p>
                 <button 
                   onClick={() => setShowPaymentModal(false)}
                   className="w-full py-5 bg-blue-900 text-white rounded-3xl font-bold hover:bg-sky-600 transition-all shadow-xl active:scale-95"
                 >
-                  Enter Premium Dashboard
+                  Return to Dashboard
                 </button>
               </div>
             ) : (
@@ -782,67 +813,15 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                   <div className="flex items-center justify-center gap-3 text-sky-600 font-bold uppercase tracking-widest text-xs mb-4">
                     <ShieldCheck className="w-4 h-4" /> Secure Advocacy Checkout
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 brand-font">Select Your Plan</h3>
-                </div>
-
-                <div className="space-y-4 mb-10">
-                  {/* Monthly Selection */}
-                  <button 
-                    onClick={() => setSelectedUpgradePlan('MONTHLY')}
-                    className={`w-full p-6 text-left rounded-3xl border-2 transition-all flex justify-between items-center group ${
-                      selectedUpgradePlan === 'MONTHLY' 
-                        ? 'border-blue-900 bg-blue-50/50 ring-4 ring-blue-900/5 shadow-lg' 
-                        : 'border-slate-100 hover:border-sky-200'
-                    }`}
-                  >
-                    <div>
-                      <h4 className="font-bold text-slate-900">Monthly Advocacy</h4>
-                      <p className="text-xs text-slate-500">Flexible monthly protection</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-black text-blue-900">${PRICING.basic}</p>
-                      <p className="text-[10px] text-slate-400 font-bold">per month</p>
-                    </div>
-                  </button>
-
-                  {/* Annual Selection */}
-                  <button 
-                    onClick={() => setSelectedUpgradePlan('ANNUAL')}
-                    className={`w-full p-6 text-left rounded-3xl border-2 transition-all relative group overflow-hidden ${
-                      selectedUpgradePlan === 'ANNUAL' 
-                        ? 'border-sky-500 bg-sky-50/50 ring-4 ring-sky-500/5 shadow-lg' 
-                        : 'border-slate-100 hover:border-sky-200'
-                    }`}
-                  >
-                    <div className="absolute top-0 right-0 px-3 py-1 bg-sky-500 text-white text-[10px] font-black uppercase tracking-widest rounded-bl-xl shadow-md">
-                      BEST VALUE
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="font-bold text-slate-900">Annual Premium</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest bg-emerald-100 px-2 py-0.5 rounded-full">Save $100</p>
-                          <p className="text-[10px] text-sky-600 font-bold">2 Months Free</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-black text-blue-900">${PRICING.premium}</p>
-                        <p className="text-[10px] text-slate-400 font-bold">per year</p>
-                      </div>
-                    </div>
-                  </button>
+                  <h3 className="text-3xl font-bold text-slate-900 brand-font">Finalize Upgrade</h3>
+                  <p className="text-slate-500">Plan: <span className="font-bold text-blue-900">{selectedUpgradePlan === 'MONTHLY' ? 'Basic Monthly' : 'Premium Annual'}</span></p>
                 </div>
 
                 <div className="bg-slate-50 p-6 rounded-3xl mb-8 border border-slate-100 flex justify-between items-center">
                   <div>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Total Due Today</p>
-                    <p className="text-2xl font-black text-slate-900">${selectedUpgradePlan === 'MONTHLY' ? PRICING.basic : PRICING.premium}</p>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Amount Due</p>
+                    <p className="text-2xl font-black text-slate-900">${selectedUpgradePlan === 'MONTHLY' ? '49.99' : '499.00'}</p>
                   </div>
-                  {selectedUpgradePlan === 'ANNUAL' && (
-                    <div className="text-right text-[10px] font-bold text-emerald-600">
-                      Savings Included
-                    </div>
-                  )}
                 </div>
 
                 <form onSubmit={handleUpgradePayment} className="space-y-4">
@@ -881,12 +860,12 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                       </>
                     ) : (
                       <>
-                        Complete Upgrade
+                        Upgrade Account
                       </>
                     )}
                   </button>
                   <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">
-                    256-Bit SSL Encryption • Cancel Anytime
+                    256-Bit SSL Encryption • Instant Activation
                   </p>
                 </form>
               </div>

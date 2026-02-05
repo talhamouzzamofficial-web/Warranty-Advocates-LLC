@@ -40,7 +40,7 @@ export interface UserProfile {
   referredBy?: string;
   totalEarned?: number;
   pendingRewards?: number;
-  plan?: 'FREE' | 'PREMIUM';
+  plan?: 'FREE' | 'BASIC' | 'PREMIUM';
 }
 
 export interface Warranty {

@@ -40,6 +40,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
       phone: formData.phone,
       state: formData.state,
       role: formData.role,
+      plan: 'FREE', // Default new accounts to Free Tier
       referralCode: formData.fullName.split(' ')[0].toUpperCase() + Math.floor(1000 + Math.random() * 9000),
       totalEarned: 0,
       pendingRewards: 0
