@@ -128,10 +128,10 @@ const App: React.FC = () => {
                     <Routes>
                       <Route path="/" element={user.role === UserRole.USER ? <UserDashboard user={user} onUpdateProfile={handleUpdateProfile} /> : <PartnerDashboard user={user} />} />
                       <Route path="/warranties" element={<UserDashboard user={user} onUpdateProfile={handleUpdateProfile} />} />
-                      <Route path="/claims" element={<UserDashboard user={user} onUpdateProfile={handleUpdateProfile} />} />
+                      <Route path="/claims" element={user.role === UserRole.USER ? <UserDashboard user={user} onUpdateProfile={handleUpdateProfile} /> : <PartnerDashboard user={user} />} />
+                      <Route path="/customers" element={<PartnerDashboard user={user} />} />
                       <Route path="/rewards" element={<UserDashboard user={user} onUpdateProfile={handleUpdateProfile} />} />
                       <Route path="/profile" element={<UserDashboard user={user} onUpdateProfile={handleUpdateProfile} />} />
-                      <Route path="/customers" element={<PartnerDashboard user={user} />} />
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </DashboardLayout>
