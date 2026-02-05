@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Car, 
@@ -13,13 +13,25 @@ import {
   User,
   Mail,
   Smartphone,
-  Send
+  Send,
+  Trash2,
+  Camera
 } from 'lucide-react';
 import { PRICING } from '../constants';
+
+interface AttachedFile {
+  name: string;
+  data: string;
+  type: string;
+  size: string;
+}
 
 const AutoClaimFormPage: React.FC = () => {
   const [isLeased, setIsLeased] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [documents, setDocuments] = useState<AttachedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -30,8 +42,48 @@ const AutoClaimFormPage: React.FC = () => {
     description: ''
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      // Fix: Explicitly type 'file' as File to avoid 'unknown' errors when accessing properties like name, type, size
+      Array.from(files).forEach((file: File) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const newFile: AttachedFile = {
+            name: file.name,
+            data: reader.result as string,
+            type: file.type.includes('pdf') ? 'PDF' : 'Image',
+            size: (file.size / 1024 / 1024).toFixed(2) + ' MB'
+          };
+          setDocuments(prev => [...prev, newFile]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    // Reset input so the same file can be selected again if removed
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // In a real app, we would send formData + documents to the backend
+    // For this simulation, we'll log activity to the global registry
+    const activities = JSON.parse(localStorage.getItem('wa_global_activities') || '[]');
+    activities.unshift({
+      id: Math.random().toString(36).substr(2, 9),
+      userId: 'GUEST_AUTO',
+      userName: formData.fullName || 'Guest User',
+      action: 'SINGLE_AUTO_CLAIM',
+      detail: `Submitted auto claim for ${formData.makeModel || 'unspecified vehicle'} (${documents.length} docs)`,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('wa_global_activities', JSON.stringify(activities.slice(0, 50)));
+
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -126,14 +178,28 @@ const AutoClaimFormPage: React.FC = () => {
                   <label className="text-xs font-bold text-slate-700 uppercase ml-1">Full Name</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input required type="text" placeholder="Talha" className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" />
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder="Your Full Name" 
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" 
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-700 uppercase ml-1">Email Address</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input required type="email" placeholder="name@example.com" className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" />
+                    <input 
+                      required 
+                      type="email" 
+                      placeholder="name@example.com" 
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" 
+                    />
                   </div>
                 </div>
               </div>
@@ -145,19 +211,39 @@ const AutoClaimFormPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-700 uppercase ml-1">Year</label>
-                  <input required type="text" placeholder="2022" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" />
+                  <input 
+                    required 
+                    type="text" 
+                    placeholder="2022" 
+                    value={formData.vehicleYear}
+                    onChange={(e) => setFormData({...formData, vehicleYear: e.target.value})}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" 
+                  />
                 </div>
                 <div className="md:col-span-2 space-y-2">
                   <label className="text-xs font-bold text-slate-700 uppercase ml-1">Make & Model</label>
                   <div className="relative">
                     <Car className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input required type="text" placeholder="Ford F-150 Lariat" className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" />
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder="Ford F-150 Lariat" 
+                      value={formData.makeModel}
+                      onChange={(e) => setFormData({...formData, makeModel: e.target.value})}
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" 
+                    />
                   </div>
                 </div>
               </div>
               <div className="mt-6 space-y-2">
                 <label className="text-xs font-bold text-slate-700 uppercase ml-1">VIN Number (Optional)</label>
-                <input type="text" placeholder="17-digit VIN" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" />
+                <input 
+                  type="text" 
+                  placeholder="17-digit VIN" 
+                  value={formData.vin}
+                  onChange={(e) => setFormData({...formData, vin: e.target.value})}
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" 
+                />
               </div>
             </div>
 
@@ -167,16 +253,63 @@ const AutoClaimFormPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-700 uppercase ml-1">Describe the Issue</label>
-                  <textarea rows={5} required placeholder="Detail the failure, the warranty company response, and current status..." className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 resize-none"></textarea>
+                  <textarea 
+                    rows={5} 
+                    required 
+                    placeholder="Detail the failure, the warranty company response, and current status..." 
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 resize-none"
+                  ></textarea>
                 </div>
                 
-                <div className="border-2 border-dashed border-slate-200 rounded-[32px] p-10 text-center bg-slate-50 hover:bg-white hover:border-sky-400 transition-all cursor-pointer group">
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-200 rounded-[32px] p-10 text-center bg-slate-50 hover:bg-white hover:border-sky-400 transition-all cursor-pointer group"
+                >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    multiple 
+                    accept=".pdf,image/*" 
+                    onChange={handleFileChange}
+                  />
                   <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform">
                     <Upload className="w-8 h-8 text-slate-400 group-hover:text-sky-500" />
                   </div>
                   <p className="font-bold text-slate-900 mb-1">Upload Service Records or Denial Letters</p>
-                  <p className="text-sm text-slate-500">Drag & drop or click to browse (Max 10MB)</p>
+                  <p className="text-sm text-slate-500">Drag & drop or click to browse (Max 10MB per file)</p>
                 </div>
+
+                {/* Evidence List */}
+                {documents.length > 0 && (
+                  <div className="space-y-3 pt-4">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Attached Evidence ({documents.length})</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      {documents.map((doc, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl animate-fade-in group">
+                          <div className="flex items-center gap-4">
+                            <div className="p-2 bg-white rounded-xl shadow-sm">
+                              {doc.type === 'PDF' ? <FileText className="w-5 h-5 text-blue-500" /> : <Camera className="w-5 h-5 text-sky-500" />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-900 truncate max-w-[200px] md:max-w-md">{doc.name}</p>
+                              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{doc.type} • {doc.size}</p>
+                            </div>
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => removeFile(idx)}
+                            className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -198,5 +331,9 @@ const AutoClaimFormPage: React.FC = () => {
     </div>
   );
 };
+
+const TrendingUp = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+);
 
 export default AutoClaimFormPage;

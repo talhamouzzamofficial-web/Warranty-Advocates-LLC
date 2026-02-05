@@ -122,6 +122,15 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
     { label: 'Referral Earnings', value: `$${referralStats.totalEarned.toFixed(2)}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-100' },
   ];
 
+  // Logic to handle restricted claim filing for Free users
+  const handleOpenNewClaim = () => {
+    if (isFreeTier && claims.length >= 1) {
+      setShowUpgradeModal(true);
+    } else {
+      setIsAddingClaim(true);
+    }
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
@@ -228,7 +237,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
       </div>
       <h2 className="text-3xl font-bold text-slate-900 mb-4 brand-font">{title} is Locked</h2>
       <p className="text-slate-500 max-w-md mx-auto text-lg mb-10">
-        You are currently on the Free Tier. To manage warranties and file claims, please upgrade to our Premium Advocacy plan.
+        You are currently on the Free Tier. To manage warranties and file unlimited claims, please upgrade to our Premium Advocacy plan.
       </p>
       <button 
         onClick={() => setShowUpgradeModal(true)}
@@ -354,50 +363,71 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
               <p className="text-slate-500">Track your ongoing claims and professional advocacy requests.</p>
             </div>
             <button 
-              onClick={() => setIsAddingClaim(true)}
+              onClick={handleOpenNewClaim}
               className="px-6 py-4 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all flex items-center gap-3 shadow-xl shadow-blue-900/10 w-full md:w-auto justify-center active:scale-95"
             >
               <Plus className="w-5 h-5" /> New Claim Request
             </button>
           </div>
           {claims.length > 0 ? (
-            <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
-               <div className="p-8 border-b border-slate-100">
-                 <h3 className="text-xl font-bold text-slate-900">Active Claim Queue</h3>
-               </div>
-               <div className="divide-y divide-slate-50">
-                 {claims.map((claim) => (
-                    <div key={claim.id} className="p-8 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center gap-6">
-                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                           claim.type === ClaimType.HOME ? 'bg-blue-100 text-blue-600' :
-                           claim.type === ClaimType.RENOVATION ? 'bg-indigo-100 text-indigo-600' :
-                           claim.type === ClaimType.AUTO ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'
-                         }`}>
-                           {claim.type === ClaimType.HOME ? <HomeIcon className="w-7 h-7" /> :
-                            claim.type === ClaimType.AUTO ? <Car className="w-7 h-7" /> : <ClipboardCheck className="w-7 h-7" />}
-                         </div>
-                         <div>
-                            <p className="font-bold text-slate-900 text-lg">{claim.title}</p>
-                            <div className="flex items-center gap-3 text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">
-                               <span>ID: {claim.id}</span>
-                               <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                               <span>{new Date(claim.createdAt).toLocaleDateString()}</span>
-                            </div>
-                         </div>
-                      </div>
-                      <div className="text-right">
-                         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border ${
-                           claim.status === ClaimStatus.PENDING ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                           claim.status === ClaimStatus.PROCESSING ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                           'bg-emerald-50 text-emerald-600 border-emerald-100'
-                         }`}>
-                           {claim.status}
-                         </span>
-                         <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase">Priority: {claim.priority}</p>
-                      </div>
+            <div className="space-y-6">
+               {isFreeTier && claims.length >= 1 && (
+                 <div className="p-6 bg-amber-50 border border-amber-100 rounded-3xl flex items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shrink-0">
+                         <AlertCircle className="w-6 h-6" />
+                       </div>
+                       <div>
+                         <p className="font-bold text-amber-900">Free Tier Limit Reached</p>
+                         <p className="text-sm text-amber-700">You can only place one claim on the Free Tier. Upgrade to Premium for unlimited advocacy.</p>
+                       </div>
                     </div>
-                 ))}
+                    <button 
+                      onClick={() => setShowUpgradeModal(true)}
+                      className="px-6 py-3 bg-blue-900 text-white rounded-xl font-bold text-sm hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/10 shrink-0"
+                    >
+                      Upgrade Now
+                    </button>
+                 </div>
+               )}
+               <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
+                  <div className="p-8 border-b border-slate-100">
+                    <h3 className="text-xl font-bold text-slate-900">Active Claim Queue</h3>
+                  </div>
+                  <div className="divide-y divide-slate-50">
+                    {claims.map((claim) => (
+                        <div key={claim.id} className="p-8 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                          <div className="flex items-center gap-6">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                              claim.type === ClaimType.HOME ? 'bg-blue-100 text-blue-600' :
+                              claim.type === ClaimType.RENOVATION ? 'bg-indigo-100 text-indigo-600' :
+                              claim.type === ClaimType.AUTO ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'
+                            }`}>
+                              {claim.type === ClaimType.HOME ? <HomeIcon className="w-7 h-7" /> :
+                                claim.type === ClaimType.AUTO ? <Car className="w-7 h-7" /> : <ClipboardCheck className="w-7 h-7" />}
+                            </div>
+                            <div>
+                                <p className="font-bold text-slate-900 text-lg">{claim.title}</p>
+                                <div className="flex items-center gap-3 text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">
+                                  <span>ID: {claim.id}</span>
+                                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                  <span>{new Date(claim.createdAt).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border ${
+                              claim.status === ClaimStatus.PENDING ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                              claim.status === ClaimStatus.PROCESSING ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                              'bg-emerald-50 text-emerald-600 border-emerald-100'
+                            }`}>
+                              {claim.status}
+                            </span>
+                            <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase">Priority: {claim.priority}</p>
+                          </div>
+                        </div>
+                    ))}
+                  </div>
                </div>
             </div>
           ) : (
@@ -405,7 +435,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                <ClipboardCheck className="w-16 h-16 text-slate-200 mx-auto mb-6" />
                <h3 className="text-xl font-bold text-slate-900">No Open Claims</h3>
                <p className="text-slate-500 mb-8">When we file a claim on your behalf, it will appear here.</p>
-               <button onClick={() => setIsAddingClaim(true)} className="text-blue-900 font-bold hover:underline">Start Advocacy Case</button>
+               <button onClick={handleOpenNewClaim} className="text-blue-900 font-bold hover:underline">Start Advocacy Case</button>
             </div>
           )}
         </div>
@@ -598,7 +628,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                 </button>
               ) : (
                 <>
-                  <button onClick={() => setIsAddingClaim(true)} className="px-6 py-3 bg-white text-blue-900 rounded-full font-bold hover:bg-sky-400 hover:text-white transition-all flex items-center gap-2 active:scale-95">
+                  <button onClick={handleOpenNewClaim} className="px-6 py-3 bg-white text-blue-900 rounded-full font-bold hover:bg-sky-400 hover:text-white transition-all flex items-center gap-2 active:scale-95">
                     <Plus className="w-5 h-5" /> File New Claim
                   </button>
                   <button onClick={() => setIsAddingWarranty(true)} className="px-6 py-3 bg-blue-800/50 border border-blue-700 text-white rounded-full font-bold hover:bg-blue-800 transition-all flex items-center gap-2 active:scale-95">
