@@ -45,7 +45,6 @@ const AutoClaimFormPage: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      // Fix: Explicitly type 'file' as File to avoid 'unknown' errors when accessing properties like name, type, size
       Array.from(files).forEach((file: File) => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -60,7 +59,6 @@ const AutoClaimFormPage: React.FC = () => {
         reader.readAsDataURL(file);
       });
     }
-    // Reset input so the same file can be selected again if removed
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -71,8 +69,6 @@ const AutoClaimFormPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // In a real app, we would send formData + documents to the backend
-    // For this simulation, we'll log activity to the global registry
     const activities = JSON.parse(localStorage.getItem('wa_global_activities') || '[]');
     activities.unshift({
       id: Math.random().toString(36).substr(2, 9),
@@ -124,12 +120,12 @@ const AutoClaimFormPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 -mt-12">
         <form onSubmit={handleSubmit} className="space-y-8">
           
-          {/* Pricing Toggle Section */}
+          {/* Pricing Section */}
           <div className="bg-white rounded-[32px] p-8 shadow-xl border border-slate-100">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-8">
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Vehicle Status</h3>
-                <p className="text-slate-500 text-sm">Fees vary depending on if your vehicle is leased or owned.</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Vehicle Purchase Type</h3>
+                <p className="text-slate-500 text-sm">Please select how the vehicle was acquired.</p>
               </div>
               
               <div className="flex items-center bg-slate-100 p-1.5 rounded-2xl w-full md:w-auto">
@@ -138,7 +134,7 @@ const AutoClaimFormPage: React.FC = () => {
                   onClick={() => setIsLeased(false)}
                   className={`flex-1 md:flex-none px-8 py-3 rounded-xl font-bold text-sm transition-all ${!isLeased ? 'bg-white text-blue-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                  Owned / Financed
+                  Cash / Financed
                 </button>
                 <button
                   type="button"
@@ -150,19 +146,23 @@ const AutoClaimFormPage: React.FC = () => {
               </div>
             </div>
 
-            <div className={`mt-8 p-6 rounded-2xl border flex items-start gap-4 transition-all ${isLeased ? 'bg-emerald-50 border-emerald-100' : 'bg-sky-50 border-sky-100'}`}>
-              <div className={`p-2 rounded-xl shrink-0 ${isLeased ? 'bg-emerald-100 text-emerald-600' : 'bg-sky-100 text-sky-600'}`}>
-                <Info className="w-6 h-6" />
+            <div className="p-6 rounded-2xl border bg-blue-50 border-blue-100 flex flex-col sm:flex-row items-start gap-4">
+              <div className="p-2 rounded-xl shrink-0 bg-blue-100 text-blue-600">
+                <ShieldCheck className="w-6 h-6" />
               </div>
-              <div>
-                <h4 className={`font-bold mb-1 ${isLeased ? 'text-emerald-900' : 'text-sky-900'}`}>
-                  Advocacy Fee: {isLeased ? '20% of Recovered Funds' : '$250.00 Flat Fee'}
+              <div className="flex-1">
+                <h4 className="font-black text-blue-900 text-lg mb-1 uppercase tracking-tight">
+                  Advocacy Fee: {PRICING.autoClaim.rate} of recovered funds (minimum ${PRICING.autoClaim.minFee})
                 </h4>
-                <p className={`text-sm leading-relaxed ${isLeased ? 'text-emerald-700/80' : 'text-sky-700/80'}`}>
-                  {isLeased 
-                    ? "Our 'No Win, No Fee' guarantee. We only charge if we successfully secure a refund or repair approval for your lease."
-                    : "A one-time professional service fee for owned vehicles. We handle all negotiations with the warranty provider."}
+                <p className="text-sm leading-relaxed text-blue-700/80 mb-4 font-medium">
+                  "No Win, No Fee" — The advocacy fee is only charged if a recovery or repair approval is successful. If no recovery is achieved, no fee is charged.
                 </p>
+                <div className="p-4 bg-white/50 rounded-xl border border-blue-200/50 flex gap-3 items-start">
+                   <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                   <p className="text-xs text-blue-900 font-semibold italic leading-relaxed">
+                     {isLeased || !isLeased ? 'For financed or leased vehicles, recovered funds are paid directly to the lender/bank. The advocacy fee is paid separately by the customer.' : ''}
+                   </p>
+                </div>
               </div>
             </div>
           </div>
@@ -201,6 +201,20 @@ const AutoClaimFormPage: React.FC = () => {
                       className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" 
                     />
                   </div>
+                </div>
+              </div>
+              <div className="mt-6 space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase ml-1">Phone Number</label>
+                <div className="relative">
+                  <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input 
+                    required 
+                    type="tel" 
+                    placeholder="239-499-3100" 
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sky-500/10" 
+                  />
                 </div>
               </div>
             </div>
@@ -331,9 +345,5 @@ const AutoClaimFormPage: React.FC = () => {
     </div>
   );
 };
-
-const TrendingUp = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-);
 
 export default AutoClaimFormPage;

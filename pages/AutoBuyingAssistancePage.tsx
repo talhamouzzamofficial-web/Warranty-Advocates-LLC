@@ -15,7 +15,12 @@ import {
   Wallet,
   X,
   CreditCard,
-  Loader2
+  Loader2,
+  TrendingUp,
+  User,
+  Tags,
+  Mail,
+  Smartphone
 } from 'lucide-react';
 import { PRICING } from '../constants';
 
@@ -24,6 +29,22 @@ const AutoBuyingAssistancePage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchased, setPurchased] = useState(false);
 
+  // Form State
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [vehicleType, setVehicleType] = useState('SUV');
+  const [vehicleBrand, setVehicleBrand] = useState('');
+
+  const handleStartAdvocacy = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !vehicleBrand || !email || !phone) {
+      alert("Please complete all contact details to proceed.");
+      return;
+    }
+    setShowCheckout(true);
+  };
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -31,6 +52,18 @@ const AutoBuyingAssistancePage: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
     setIsProcessing(false);
     setPurchased(true);
+
+    const activities = JSON.parse(localStorage.getItem('wa_global_activities') || '[]');
+    activities.unshift({
+      id: Math.random().toString(36).substr(2, 9),
+      userId: 'GUEST_BUYING',
+      userName: fullName || 'Guest User',
+      action: 'AUTO_BUYING_PURCHASE',
+      detail: `Paid for auto buying assistance for ${vehicleBrand} ${vehicleType}`,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('wa_global_activities', JSON.stringify(activities.slice(0, 50)));
+
     setTimeout(() => {
       setShowCheckout(false);
     }, 2000);
@@ -66,6 +99,10 @@ const AutoBuyingAssistancePage: React.FC = () => {
     { title: 'Document Review', desc: 'Before you sign, we review the final contract for total accuracy.' }
   ];
 
+  const vehicleTypes = [
+    'Sedan', 'SUV', 'Truck', 'Coupe', 'Electric/EV', 'Luxury', 'Minivan', 'Hatchback'
+  ];
+
   return (
     <div className="bg-white pb-24">
       {/* Hero */}
@@ -75,28 +112,121 @@ const AutoBuyingAssistancePage: React.FC = () => {
           <Link to="/services" className="inline-flex items-center gap-2 text-sky-300 font-bold hover:text-white transition-colors mb-8">
             <ChevronLeft className="w-5 h-5" /> Back to Services
           </Link>
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/20 border border-sky-400/20 mb-6">
-              <Star className="w-4 h-4 text-sky-400 fill-current" />
-              <span className="text-sky-300 text-xs font-bold tracking-widest uppercase">Expert Buying Counsel</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 brand-font leading-tight">
-              Don't Walk Into the Dealership <span className="text-sky-400">Alone</span>.
-            </h1>
-            <p className="text-xl text-blue-100 mb-10 leading-relaxed">
-              For a flat one-time fee, our professional advocates handle the entire car buying process for you. From negotiation to warranty auditing—we ensure you never overpay.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <button 
-                onClick={() => setShowCheckout(true)}
-                className="px-10 py-5 bg-sky-500 text-white rounded-2xl font-bold text-lg hover:bg-sky-400 transition-all shadow-xl shadow-sky-500/20 flex items-center gap-3 active:scale-95"
-              >
-                Book Advocacy Now <ArrowRight className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-3 px-6 py-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <span className="text-2xl font-bold">${PRICING.autoBuying}</span>
-                <span className="text-blue-300 text-xs font-bold uppercase tracking-widest">One-Time Fee</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/20 border border-sky-400/20 mb-6">
+                <Star className="w-4 h-4 text-sky-400 fill-current" />
+                <span className="text-sky-300 text-xs font-bold tracking-widest uppercase">Professional Buyer's Shield</span>
               </div>
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 brand-font leading-tight">
+                Don't Walk Into the Dealership <span className="text-sky-400">Alone</span>.
+              </h1>
+              <p className="text-xl text-blue-100 mb-10 leading-relaxed">
+                For a flat one-time fee, our professional advocates handle the entire car buying process for you. From negotiation to warranty auditing—we ensure you never overpay.
+              </p>
+              <div className="flex items-center gap-6">
+                 <div className="flex -space-x-3">
+                   {[1,2,3,4].map(i => (
+                     <img key={i} src={`https://i.pravatar.cc/100?img=${i+10}`} className="w-12 h-12 rounded-full border-4 border-blue-900 shadow-xl" alt="User" />
+                   ))}
+                 </div>
+                 <p className="text-sm text-blue-200 font-medium">Join 2,500+ buyers who saved an average of $2,400.</p>
+              </div>
+            </div>
+
+            {/* Inbound Context Capture */}
+            <div className="bg-white p-8 lg:p-10 rounded-[40px] shadow-2xl border border-white/10 relative group">
+              <div className="absolute top-0 right-10 -translate-y-1/2">
+                <span className="px-6 py-2.5 bg-sky-500 text-white rounded-full text-xs font-black tracking-widest uppercase shadow-xl">Start Here</span>
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-6 text-center brand-font">Advocacy Request</h3>
+              <form onSubmit={handleStartAdvocacy} className="space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Your Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input 
+                      type="text" 
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="e.g. Michael Scott" 
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-slate-900 text-sm font-bold transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input 
+                          type="email" 
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="john@example.com" 
+                          className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-slate-900 text-sm font-bold transition-all"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone</label>
+                      <div className="relative">
+                        <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input 
+                          type="tel" 
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="239-000-0000" 
+                          className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-slate-900 text-sm font-bold transition-all"
+                          required
+                        />
+                      </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Vehicle Type</label>
+                    <div className="relative">
+                      <Car className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <select 
+                        value={vehicleType}
+                        onChange={(e) => setVehicleType(e.target.value)}
+                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-slate-900 text-sm font-bold transition-all appearance-none cursor-pointer"
+                      >
+                        {vehicleTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Desired Brand</label>
+                    <div className="relative">
+                      <Tags className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input 
+                        type="text" 
+                        value={vehicleBrand}
+                        onChange={(e) => setVehicleBrand(e.target.value)}
+                        placeholder="e.g. Toyota, Tesla" 
+                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-slate-900 text-sm font-bold transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button 
+                    type="submit"
+                    className="w-full py-5 bg-blue-900 text-white rounded-[24px] font-black text-lg hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 group active:scale-[0.98]"
+                  >
+                    Start Professional Advocacy <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">One-Time Advocacy Fee: ${PRICING.autoBuying}</p>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -157,7 +287,7 @@ const AutoBuyingAssistancePage: React.FC = () => {
                       onClick={() => setShowCheckout(true)}
                       className="w-full mt-10 py-5 bg-white text-blue-900 rounded-3xl font-bold text-lg hover:bg-sky-400 hover:text-white transition-all shadow-xl active:scale-95"
                     >
-                      Lock In My Advocate
+                      Book Professional Advocacy
                     </button>
                  </div>
               </div>
@@ -167,11 +297,11 @@ const AutoBuyingAssistancePage: React.FC = () => {
 
       {/* Checkout Modal */}
       {showCheckout && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-lg animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-[48px] shadow-2xl overflow-hidden relative">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-lg animate-fade-in overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-[48px] shadow-2xl overflow-hidden relative my-8">
             <button 
               onClick={() => setShowCheckout(false)}
-              className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-900 transition-colors"
+              className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-900 transition-colors z-30"
             >
               <X className="w-6 h-6" />
             </button>
@@ -193,8 +323,11 @@ const AutoBuyingAssistancePage: React.FC = () => {
                   <div className="flex items-center gap-3 text-sky-600 font-bold uppercase tracking-widest text-xs mb-4">
                     <ShieldCheck className="w-4 h-4" /> Secure Checkout
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 brand-font">Confirm Purchase</h3>
-                  <p className="text-slate-500">Auto Buying Professional Advocacy</p>
+                  <h3 className="text-3xl font-bold text-slate-900 brand-font">Confirm Advocacy</h3>
+                  <div className="mt-2 p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-600">
+                     Reserved for: <span className="font-bold">{fullName}</span><br/>
+                     Vehicle: <span className="font-bold">{vehicleBrand} {vehicleType}</span>
+                  </div>
                 </div>
 
                 <div className="bg-slate-50 p-6 rounded-3xl mb-8 border border-slate-100">
@@ -260,9 +393,5 @@ const AutoBuyingAssistancePage: React.FC = () => {
     </div>
   );
 };
-
-const TrendingUp = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-);
 
 export default AutoBuyingAssistancePage;

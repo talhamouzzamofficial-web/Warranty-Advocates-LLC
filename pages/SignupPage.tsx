@@ -97,7 +97,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
                   { role: UserRole.USER, title: 'I need warranty help', desc: 'Homeowners and car owners looking for advocacy.' },
-                  { role: UserRole.PARTNER, title: 'Territory Partner', desc: 'Real estate agents and businesses managing customers.' }
+                  { role: UserRole.PARTNER, title: 'Regional Partner', desc: 'Real estate agents and businesses managing customers.' }
                 ].map((option) => (
                   <button
                     key={option.role}
@@ -196,7 +196,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onLogin }) => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Postcode</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Zip Code</label>
                     <div className="relative">
                       <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                       <input 

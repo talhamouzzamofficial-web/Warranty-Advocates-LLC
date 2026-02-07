@@ -2,8 +2,13 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ShieldCheck, Menu, X } from 'lucide-react';
+import { CMSSettings } from '../types';
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+  settings: CMSSettings;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ settings }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
@@ -11,7 +16,7 @@ const Navbar: React.FC = () => {
     { label: 'Home', path: '/' },
     { label: 'How It Works', path: '/how-it-works' },
     { label: 'Services', path: '/services' },
-    { label: 'FAQ', path: '/faqs' },
+    { label: 'FAQ', path: '/faq' },
     { label: 'Contact', path: '/contact' },
   ];
 
@@ -23,17 +28,20 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between h-20">
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="p-2 bg-blue-900 rounded-lg group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-7 h-7 text-sky-400" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-blue-900 font-bold text-xl leading-none brand-font">WARRANTY</span>
-                <span className="text-sky-500 font-semibold text-xs tracking-widest">ADVOCATES LLC</span>
-              </div>
+              {settings.logoUrl ? (
+                <img src={settings.logoUrl} alt="Logo" style={{ width: settings.logoWidth ? `${settings.logoWidth}px` : 'auto' }} className="h-auto" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-8 h-8 text-blue-900 group-hover:scale-110 transition-transform" />
+                  <div className="flex flex-col">
+                    <span className="text-blue-900 font-bold text-xl leading-none brand-font uppercase">Warranty</span>
+                    <span className="text-sky-500 font-semibold text-[10px] tracking-[0.3em] uppercase">Advocates</span>
+                  </div>
+                </div>
+              )}
             </Link>
           </div>
 
-          {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-1">
             {links.map((link) => (
               <Link
@@ -58,7 +66,6 @@ const Navbar: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -70,7 +77,6 @@ const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Nav */}
       {isOpen && (
         <div className="md:hidden bg-white border-t border-slate-100 p-4 space-y-2">
           {links.map((link) => (
@@ -88,20 +94,8 @@ const Navbar: React.FC = () => {
             </Link>
           ))}
           <div className="pt-4 grid grid-cols-2 gap-3">
-            <Link 
-              to="/login" 
-              onClick={() => setIsOpen(false)}
-              className="flex justify-center items-center px-4 py-3 rounded-xl text-blue-900 bg-blue-50 font-semibold text-sm"
-            >
-              Sign In
-            </Link>
-            <Link 
-              to="/signup" 
-              onClick={() => setIsOpen(false)}
-              className="flex justify-center items-center px-4 py-3 rounded-xl text-white bg-blue-900 font-semibold text-sm shadow-md"
-            >
-              Get Started
-            </Link>
+            <Link to="/login" onClick={() => setIsOpen(false)} className="flex justify-center items-center px-4 py-3 rounded-xl text-blue-900 bg-blue-50 font-semibold text-sm">Sign In</Link>
+            <Link to="/signup" onClick={() => setIsOpen(false)} className="flex justify-center items-center px-4 py-3 rounded-xl text-white bg-blue-900 font-semibold text-sm shadow-md">Get Started</Link>
           </div>
         </div>
       )}

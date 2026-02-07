@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, Terminal } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, Terminal, UserSearch } from 'lucide-react';
 import { UserRole, UserProfile } from '../types';
 
 interface LoginPageProps {
@@ -28,9 +28,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   }, [location]);
 
   const handleLoginProcess = (role: UserRole, forceUnregistered: boolean = false) => {
-    // Admins are not allowed to log in through this gate anymore
-    if (role === UserRole.ADMIN && forceUnregistered === false) {
-      setError('Administrators must use the Staff Portal.');
+    // Admins and Employees are not allowed to log in through this gate anymore
+    if ((role === UserRole.ADMIN || role === UserRole.EMPLOYEE) && forceUnregistered === false) {
+      setError('Staff members must use the Staff Portal.');
       return;
     }
 
@@ -43,7 +43,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       const mockUser: UserProfile = {
         id: Math.random().toString(36).substr(2, 9),
         email: email || `${role.toLowerCase()}@example.com`,
-        fullName: role === UserRole.PARTNER ? 'Florida Partner' : role === UserRole.ADMIN ? 'Head Office Administrator' : 'Jane Doe',
+        fullName: role === UserRole.PARTNER ? 'Florida Partner' : role === UserRole.ADMIN ? 'Head Office Admin' : role === UserRole.EMPLOYEE ? 'Staff Associate' : 'Jane Doe',
         role: role,
         referralCode: (email ? email.split('@')[0].toUpperCase() : 'USER') + 'REF',
         totalEarned: 0,
@@ -52,7 +52,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       onLogin(mockUser);
     }
     
-    if (role === UserRole.ADMIN) {
+    if (role === UserRole.ADMIN || role === UserRole.EMPLOYEE) {
       navigate('/admin-portal');
     } else {
       navigate('/dashboard');
@@ -144,9 +144,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           {/* Quick Access Mock Buttons for Testing roles */}
           <div className="mt-10 pt-10 border-t border-slate-100">
             <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Demo Gateways</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 mb-3">
               <button onClick={() => handleLoginProcess(UserRole.USER, true)} className="py-3 text-[9px] font-bold bg-slate-100 text-slate-600 rounded-xl hover:bg-blue-900 hover:text-white transition-all uppercase tracking-widest">User</button>
               <button onClick={() => handleLoginProcess(UserRole.PARTNER, true)} className="py-3 text-[9px] font-bold bg-slate-100 text-slate-600 rounded-xl hover:bg-blue-900 hover:text-white transition-all uppercase tracking-widest">Partner</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => handleLoginProcess(UserRole.EMPLOYEE, true)} className="py-3 text-[9px] font-bold bg-slate-900 text-white rounded-xl hover:bg-sky-500 transition-all uppercase tracking-widest flex items-center justify-center gap-1">
+                <UserSearch className="w-3 h-3" /> Staff
+              </button>
               <button onClick={() => handleLoginProcess(UserRole.ADMIN, true)} className="py-3 text-[9px] font-bold bg-slate-900 text-white rounded-xl hover:bg-sky-500 transition-all uppercase tracking-widest flex items-center justify-center gap-1">
                 <Terminal className="w-3 h-3" /> Admin
               </button>
@@ -156,7 +161,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         </div>
 
         <p className="text-center mt-10 text-slate-600">
-          Don't have an account? <Link to="/signup" className="text-blue-900 font-bold hover:text-sky-600 transition-colors">Join Now</Link>
+          Don't have an account? <Link to="/signup" className="text-blue-900 font-bold hover:text-sky-600 transition-colors">Sign Up</Link>
         </p>
       </div>
     </div>

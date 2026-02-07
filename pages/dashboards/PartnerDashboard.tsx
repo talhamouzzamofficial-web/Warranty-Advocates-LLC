@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -34,12 +34,30 @@ import {
   Activity,
   CreditCard,
   Wallet,
-  AlertCircle
+  AlertCircle,
+  Menu,
+  MoreVertical,
+  User as UserIcon,
+  Camera,
+  Globe,
+  Hash,
+  Smartphone as PhoneIcon,
+  Save,
+  Check,
+  Briefcase,
+  ExternalLink,
+  Edit2,
+  PhoneCall,
+  Home as HomeIcon,
+  ShieldAlert,
+  History,
+  Banknote
 } from 'lucide-react';
 import { UserProfile, UserRole, ClaimStatus } from '../../types';
 
 interface PartnerDashboardProps {
   user: UserProfile;
+  onUpdateProfile?: (updatedProfile: Partial<UserProfile>) => void;
 }
 
 interface CustomerDocument {
@@ -50,7 +68,7 @@ interface CustomerDocument {
   size: string;
 }
 
-interface TerritoryCustomer {
+interface RegionalCustomer {
   id: string;
   partnerId: string;
   name: string;
@@ -64,77 +82,72 @@ interface TerritoryCustomer {
   documents: CustomerDocument[];
 }
 
-interface CommissionRecord {
-  id: string;
-  customerName: string;
-  plan: string;
-  amount: number;
-  date: string;
-  status: 'PAID' | 'PENDING';
-}
-
-interface TerritoryClaim {
-  id: string;
-  customerName: string;
-  type: 'HOME' | 'AUTO';
-  status: ClaimStatus;
-  date: string;
-  description: string;
-}
-
-const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
-  const location = useLocation();
+const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfile }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'REWARDS' | 'CLAIMS'>(() => {
-    if (location.pathname === '/dashboard/claims') return 'CLAIMS';
-    if (location.pathname === '/dashboard/customers') return 'CUSTOMERS';
-    return 'CUSTOMERS';
-  });
+  const location = useLocation();
+  const path = location.pathname;
 
-  useEffect(() => {
-    if (location.pathname === '/dashboard/claims') setActiveTab('CLAIMS');
-    else if (location.pathname === '/dashboard/customers') setActiveTab('CUSTOMERS');
-  }, [location.pathname]);
-  
-  // Persistence for demo purposes - Also saved globally for Admin
-  const [customers, setCustomers] = useState<TerritoryCustomer[]>(() => {
-    const saved = localStorage.getItem(`wa_partner_customers_${user.id}`);
-    return saved ? JSON.parse(saved) : [];
+  const [activeTab, setActiveTab] = useState<'Directory' | 'Claims' | 'Earnings' | 'Profile'>(() => {
+    if (path.includes('/rewards')) return 'Earnings';
+    if (path.includes('/claims')) return 'Claims';
+    if (path.includes('/profile')) return 'Profile';
+    return 'Directory';
   });
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<TerritoryCustomer | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<RegionalCustomer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isRequestingPayout, setIsRequestingPayout] = useState(false);
+  const [payoutSuccess, setPayoutSuccess] = useState(false);
 
-  // Mock Claims for territory
-  const territoryClaims: TerritoryClaim[] = customers.length > 0 ? ([
-    { id: 'CLM-001', customerName: customers[0].name, type: customers[0].claimType, status: ClaimStatus.PROCESSING, date: '2025-05-15', description: 'Initial advocacy request.' },
-    { id: 'CLM-002', customerName: customers[0].name, type: customers[0].claimType === 'HOME' ? 'AUTO' : 'HOME', status: ClaimStatus.PENDING, date: '2025-05-18', description: 'Secondary inquiry.' }
-  ] as TerritoryClaim[]).filter((_, i) => i < customers.length) : [];
+  // Profile Management State
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    fullName: user.fullName,
+    email: user.email,
+    phone: user.phone || '',
+    address: user.address || '',
+    postcode: user.postcode || '',
+    state: user.state || ''
+  });
+  const profileImageInputRef = useRef<HTMLInputElement>(null);
 
-  // Mock Commission Data
-  const commissions: CommissionRecord[] = customers
-    .filter(c => c.plan !== 'FREE')
-    .map((c, i) => ({
-      id: `COM-${c.id.substring(0, 4)}-${i}`,
-      customerName: c.name,
-      plan: c.plan,
-      amount: c.plan === 'PREMIUM' ? 100 : 20,
-      date: c.registrationDate,
-      status: i % 3 === 0 ? 'PENDING' : 'PAID'
-    }));
+  // Persistence
+  const [customers, setCustomers] = useState<RegionalCustomer[]>(() => {
+    const saved = localStorage.getItem(`wa_partner_customers_${user.id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
 
   useEffect(() => {
     localStorage.setItem(`wa_partner_customers_${user.id}`, JSON.stringify(customers));
   }, [customers, user.id]);
 
+  useEffect(() => {
+    if (path.includes('/rewards')) setActiveTab('Earnings');
+    else if (path.includes('/claims')) setActiveTab('Claims');
+    else if (path.includes('/profile')) setActiveTab('Profile');
+    else setActiveTab('Directory');
+  }, [path]);
+
+  useEffect(() => {
+    setProfileForm({
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone || '',
+      address: user.address || '',
+      postcode: user.postcode || '',
+      state: user.state || ''
+    });
+  }, [user]);
+
   const handleAddCustomer = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
-    const newCustomer: TerritoryCustomer = {
+    const newCustomer: RegionalCustomer = {
       id: Math.random().toString(36).substr(2, 9).toUpperCase(),
       partnerId: user.id,
       name: formData.get('name') as string,
@@ -147,42 +160,39 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
       registrationDate: new Date().toISOString().split('T')[0],
       documents: []
     };
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const updated = [newCustomer, ...customers];
-    setCustomers(updated);
-    
-    // SYNC GLOBALLY FOR ADMIN
-    const globalCustomers = JSON.parse(localStorage.getItem('wa_global_customers') || '[]');
-    globalCustomers.unshift({ ...newCustomer, partnerName: user.fullName });
-    localStorage.setItem('wa_global_customers', JSON.stringify(globalCustomers));
-
-    // Log activity for Admin
-    const activities = JSON.parse(localStorage.getItem('wa_global_activities') || '[]');
-    activities.unshift({
-      id: Math.random().toString(36).substr(2, 9),
-      userId: user.id,
-      userName: user.fullName,
-      action: 'PARTNER_REGISTER_CUSTOMER',
-      detail: `Partner registered new customer: ${newCustomer.name} (${newCustomer.plan})`,
-      timestamp: new Date().toISOString()
-    });
-    localStorage.setItem('wa_global_activities', JSON.stringify(activities.slice(0, 50)));
-
+    await new Promise(resolve => setTimeout(resolve, 800));
+    setCustomers([newCustomer, ...customers]);
     setIsSubmitting(false);
     setShowAddModal(false);
   };
 
-  const handleUploadDoc = (customerId: string, file: File) => {
-    const newDoc: CustomerDocument = {
-      id: Math.random().toString(36).substr(2, 5).toUpperCase(),
-      name: file.name,
-      type: file.type.split('/')[1].toUpperCase(),
-      date: new Date().toISOString().split('T')[0],
-      size: (file.size / 1024 / 1024).toFixed(2) + ' MB'
+  const handleUpdateCustomer = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+    
+    setIsSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    const updatedCustomer: RegionalCustomer = {
+      ...editingCustomer,
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      phone: formData.get('phone') as string,
+      address: formData.get('address') as string,
+      plan: formData.get('plan') as any,
+      claimType: formData.get('claimType') as any,
     };
-    setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, documents: [...c.documents, newDoc] } : c));
-    if (selectedCustomer?.id === customerId) setSelectedCustomer(prev => prev ? { ...prev, documents: [...prev.documents, newDoc] } : null);
+
+    await new Promise(resolve => setTimeout(resolve, 800));
+    setCustomers(customers.map(c => c.id === editingCustomer.id ? updatedCustomer : c));
+    setIsSubmitting(false);
+    setEditingCustomer(null);
+  };
+
+  const handleDeleteCustomer = async (id: string) => {
+    if (!window.confirm('Are you sure you want to remove this customer from your regional management? This action cannot be undone.')) return;
+    
+    setCustomers(customers.filter(c => c.id !== id));
+    setEditingCustomer(null);
   };
 
   const handleCopyPartnerLink = () => {
@@ -192,429 +202,763 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handlePayoutRequest = async () => {
+    setIsRequestingPayout(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsRequestingPayout(false);
+    setPayoutSuccess(true);
+    setTimeout(() => setPayoutSuccess(false), 5000);
+  };
 
-  const totalEarnings = commissions.reduce((acc, curr) => acc + curr.amount, 0);
-  const pendingEarnings = commissions.filter(c => c.status === 'PENDING').reduce((acc, curr) => acc + curr.amount, 0);
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    setSaveSuccess(false);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    onUpdateProfile?.(profileForm);
+    setIsSavingProfile(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
 
-  const renderClaimsView = () => (
-    <div className="space-y-8 animate-fade-in">
-      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-slate-900">Territory Advocacy Requests</h3>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold uppercase tracking-widest">Global Sync Active</span>
-          </div>
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image size should be less than 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onUpdateProfile?.({ photoUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const directoryStats = [
+    { label: 'TOTAL CUSTOMERS', value: customers.length, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: 'PREMIUM USERS', value: customers.filter(c => c.plan === 'PREMIUM').length, icon: ShieldCheck, color: 'text-blue-400', bg: 'bg-blue-50' },
+    { label: 'REGIONAL REVENUE', value: `$${(customers.reduce((acc, curr) => acc + (curr.plan === 'PREMIUM' ? 499 : curr.plan === 'BASIC' ? 49.99 : 0), 0)).toFixed(2)}`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: 'CUSTOMER DOCS', value: customers.reduce((acc, curr) => acc + curr.documents.length, 0), icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+  ];
+
+  const claimsStats = [
+    { label: 'REGIONAL CLAIMS', value: customers.length, icon: ClipboardCheck, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'PENDING AUDIT', value: customers.filter(c => c.status === 'Pending').length, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'ACTIVE ADVOCACY', value: customers.filter(c => c.status === 'Active').length, icon: ShieldAlert, color: 'text-sky-500', bg: 'bg-sky-50' },
+    { label: 'SUCCESS RATE', value: customers.length > 0 ? '94%' : '0%', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+  ];
+
+  const renderProfile = () => (
+    <div className="space-y-8 animate-fade-in pb-20 max-w-6xl mx-auto px-4 md:px-0">
+      <div className="text-left mb-10">
+        <h2 className="text-3xl md:text-4xl font-bold text-[#0f172a] brand-font mb-2">Regional Partner Profile</h2>
+        <p className="text-slate-500 text-base md:text-lg font-medium">Manage your professional credentials and headquarters information.</p>
+      </div>
+
+      <div className="bg-white rounded-[32px] md:rounded-[40px] shadow-2xl border border-slate-100 overflow-hidden relative">
+        <div className="bg-[#1e3a8a] h-24 md:h-48 w-full relative">
+          <div className="absolute top-4 right-8 text-white/10 font-black text-3xl md:text-7xl select-none tracking-tighter">HQ PARTNER</div>
+          <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-white/10 to-transparent"></div>
         </div>
-        {territoryClaims.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50">
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Case ID</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Type</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {territoryClaims.map((claim) => (
-                  <tr key={claim.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-8 py-6 text-sm font-bold text-blue-900">{claim.id}</td>
-                    <td className="px-8 py-6">
-                      <p className="text-sm font-bold text-slate-900">{claim.customerName}</p>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="text-xs font-bold text-slate-600 flex items-center gap-2">
-                        {claim.type === 'HOME' ? <HomeIcon className="w-3.5 h-3.5" /> : <Car className="w-3.5 h-3.5" />}
-                        {claim.type}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                        claim.status === ClaimStatus.APPROVED ? 'bg-emerald-100 text-emerald-700' : 
-                        claim.status === ClaimStatus.PROCESSING ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {claim.status}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6 text-right text-xs font-bold text-slate-400 uppercase">{claim.date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="py-24 text-center">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
-              <ClipboardCheck className="w-10 h-10" />
+
+        <div className="relative px-6 lg:px-16 -mt-12 md:-mt-20 pb-16">
+          <form onSubmit={handleProfileSubmit}>
+            <div className="flex flex-col lg:flex-row items-center lg:items-end gap-6 md:gap-8 mb-16">
+              <div className="relative group">
+                <div className="w-28 h-28 md:w-48 md:h-48 rounded-[24px] md:rounded-[32px] border-[6px] md:border-[8px] border-white bg-[#f8fafc] overflow-hidden shadow-2xl flex items-center justify-center text-slate-200 transition-transform group-hover:scale-[1.02]">
+                  {user.photoUrl ? (
+                    <img src={user.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-12 h-12 md:w-24 md:h-24" />
+                  )}
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => profileImageInputRef.current?.click()}
+                  className="absolute bottom-[-10px] right-[-10px] w-10 h-10 md:w-12 md:h-12 bg-sky-500 text-white rounded-2xl flex items-center justify-center shadow-xl hover:bg-sky-400 transition-all border-4 border-white active:scale-90"
+                  title="Upload New Photo"
+                >
+                  <Camera className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+                <input type="file" ref={profileImageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+              </div>
+
+              <div className="flex-grow pb-4 text-center lg:text-left">
+                 <h3 className="text-xl md:text-2xl font-bold text-slate-900 leading-none">{user.fullName}</h3>
+                 <p className="text-sky-600 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] mt-2">Certified Regional Partner • Member since {new Date().getFullYear()}</p>
+              </div>
             </div>
-            <p className="text-slate-500 font-bold">No active claims in your territory.</p>
-            <p className="text-xs text-slate-400 mt-2">When your customers submit claims for advocacy, they will appear here.</p>
-          </div>
-        )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-8 md:gap-y-12">
+              <div className="space-y-6 md:space-y-8">
+                <div className="flex items-center gap-3 mb-2">
+                   <div className="w-1 h-5 md:w-1.5 md:h-6 bg-blue-600 rounded-full"></div>
+                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Contact Information</h4>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Legal Name</label>
+                  <div className="relative group">
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                    <input 
+                      type="text" 
+                      value={profileForm.fullName} 
+                      onChange={(e) => setProfileForm({...profileForm, fullName: e.target.value})}
+                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white transition-all text-sm" 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Partner Email (Read Only)</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={profileForm.email} 
+                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-400 focus:outline-none cursor-not-allowed italic text-sm" 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Direct Phone</label>
+                  <div className="relative group">
+                    <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                    <input 
+                      type="text" 
+                      value={profileForm.phone} 
+                      onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
+                      placeholder="239-499-3100"
+                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white transition-all text-sm" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6 md:space-y-8">
+                <div className="flex items-center gap-3 mb-2">
+                   <div className="w-1 h-5 md:w-1.5 md:h-6 bg-emerald-500 rounded-full"></div>
+                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Territory Address</h4>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Office Street Address</label>
+                  <div className="relative group">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                    <input 
+                      type="text" 
+                      value={profileForm.address} 
+                      onChange={(e) => setProfileForm({...profileForm, address: e.target.value})}
+                      placeholder="e.g. 500 Legacy Way"
+                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white transition-all text-sm" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 md:gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">State / Region</label>
+                    <div className="relative group">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                      <input 
+                        type="text" 
+                        value={profileForm.state} 
+                        onChange={(e) => setProfileForm({...profileForm, state: e.target.value})}
+                        placeholder="Florida"
+                        className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-900/5 focus:bg-white transition-all text-sm" 
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Zip Code</label>
+                    <div className="relative group">
+                      <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                      <input 
+                        type="text" 
+                        value={profileForm.postcode} 
+                        onChange={(e) => setProfileForm({...profileForm, postcode: e.target.value})}
+                        placeholder="33901"
+                        className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-900/5 focus:bg-white transition-all text-sm" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-16 pt-10 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-6">
+              <div className="flex items-center gap-3">
+                 <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                 <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Partner Data is 256-Bit Encrypted</p>
+              </div>
+              <div className="flex gap-4 items-center w-full sm:w-auto">
+                {saveSuccess && (
+                  <span className="text-emerald-600 font-bold text-sm flex items-center gap-2 animate-fade-in">
+                    <Check className="w-4 h-4" /> Profile Updated
+                  </span>
+                )}
+                <button type="submit" disabled={isSavingProfile} className="w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 bg-[#1e3a8a] text-white rounded-2xl font-bold text-sm shadow-2xl hover:bg-blue-800 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3">
+                  {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {isSavingProfile ? 'Deploying Changes...' : 'Save HQ Profile'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
 
-  const renderRewardsView = () => (
-    <div className="space-y-8 animate-fade-in">
-      <div className="bg-gradient-to-br from-blue-900 to-indigo-900 p-8 lg:p-12 rounded-[40px] text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-          <Gift className="w-64 h-64" />
+  const renderRewardsDashboard = () => {
+    const payoutProgress = Math.min((user.totalEarned || 0) / 50 * 100, 100);
+    const isPayoutReady = (user.totalEarned || 0) >= 50;
+
+    return (
+      <div className="space-y-6 animate-fade-in no-scrollbar pb-10 px-4 md:px-0">
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#0f172a] brand-font tracking-tight">Rewards & Affiliate Dashboard</h1>
+          <p className="text-xs md:text-sm text-slate-500 font-medium">Earn 20% commission for every successful referral.</p>
         </div>
-        <div className="relative z-10 max-w-2xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl">
-              <TrendingUp className="w-6 h-6 text-sky-400" />
+
+        <button onClick={handleCopyPartnerLink} className={`w-full py-4 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 ${copied ? 'bg-emerald-500 text-white' : 'bg-[#1e3a8a] text-white hover:bg-blue-800'}`}>
+          {copied ? <CheckCircle2 className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+          {copied ? 'Copied' : 'Copy Referral Link'}
+        </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {[
+            { label: 'TOTAL EARNED', value: `$${(user.totalEarned || 0).toFixed(2)}`, sub: '+0% this week', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+            { label: 'PENDING PAYOUT', value: `$${(user.pendingRewards || 0).toFixed(2)}`, sub: 'Payout at $50.00', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
+            { label: 'REFERRAL SIGNUPS', value: customers.length.toString(), sub: '0 clicks today', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+            { label: 'COMMISSION RATE', value: '20%', sub: 'Elite Partner level', icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white p-6 md:p-8 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-between">
+              <div className={`w-10 h-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-6`}>
+                <stat.icon className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                <p className="text-xl md:text-2xl font-bold text-slate-900">{stat.value}</p>
+                <p className="text-[10px] text-slate-400 font-medium mt-1">{stat.sub}</p>
+              </div>
             </div>
-            <h3 className="text-2xl font-bold brand-font">Partner Earning Portal</h3>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[300px] md:h-[360px]">
+            <div className="p-6 md:p-8 border-b border-slate-50 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-slate-900">Recent Referrals</h3>
+              <button className="text-[10px] font-bold text-blue-600 hover:underline uppercase tracking-widest">View History</button>
+            </div>
+            <div className="flex-grow flex flex-col items-center justify-center p-8 md:p-10 text-center">
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-200">
+                <Activity className="w-6 h-6 md:w-8 md:h-8" />
+              </div>
+              <p className="text-slate-400 font-medium text-sm">No referral activity yet. Start sharing your link!</p>
+            </div>
           </div>
-          <p className="text-blue-100 text-lg mb-10 leading-relaxed">
-            As a territory partner, you earn a <span className="font-bold text-white underline underline-offset-4 decoration-sky-400">20% lifetime commission</span> on all subscriptions registered under your territory link.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-grow relative group">
-              <input 
-                type="text" 
-                readOnly 
-                value={`${window.location.origin}/#/signup?partner=${user.referralCode || user.id.substring(0, 6)}`}
-                className="w-full bg-white/5 border border-white/20 rounded-2xl py-4 pl-6 pr-24 text-sm font-medium focus:outline-none"
-              />
-              <button 
-                onClick={handleCopyPartnerLink}
-                className={`absolute right-2 top-2 bottom-2 px-6 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                  copied ? 'bg-emerald-500 text-white' : 'bg-sky-500 hover:bg-sky-400 text-white shadow-lg shadow-sky-500/20'
-                }`}
-              >
-                {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? 'Copied' : 'Copy Link'}
-              </button>
+          <div className="bg-[#244191] rounded-[24px] p-8 lg:p-10 text-white relative overflow-hidden flex flex-col justify-between h-[300px] md:h-[360px] shadow-2xl">
+            <div className="absolute top-1/2 right-[-15%] -translate-y-1/2 opacity-[0.08] pointer-events-none">
+              <Gift className="w-56 h-56 lg:w-72 lg:h-72" />
+            </div>
+            <div className="relative z-10 h-full flex flex-col">
+              <h3 className="text-xl font-bold mb-4 brand-font">Payout Progress</h3>
+              <p className="text-blue-100 text-xs leading-relaxed mb-10 max-w-xs opacity-90">
+                {isPayoutReady 
+                  ? "Milestone complete! You are eligible for a regional commission payout." 
+                  : "Reach $50.00 in earnings to unlock your first withdrawal via PayPal or Bank Transfer."}
+              </p>
+              
+              <div className="mt-auto">
+                {payoutSuccess ? (
+                  <div className="p-4 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex flex-col items-center text-center animate-in zoom-in duration-300">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mb-2" />
+                    <p className="text-xs font-bold text-white">Payout Requested!</p>
+                    <p className="text-[9px] text-emerald-100 mt-0.5">Verification pending (1-2 days).</p>
+                  </div>
+                ) : isPayoutReady ? (
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-widest mb-2">
+                      <span className="text-emerald-400">Available to Withdraw</span>
+                      <span className="text-white">${(user.totalEarned || 0).toFixed(2)}</span>
+                    </div>
+                    <button 
+                      onClick={handlePayoutRequest}
+                      disabled={isRequestingPayout}
+                      className="w-full py-4 bg-[#0ea5e9] text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-sky-400 shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      {isRequestingPayout ? <Loader2 className="w-4 h-4 animate-spin" /> : <Banknote className="w-4 h-4" />}
+                      {isRequestingPayout ? 'Sending...' : 'Request Pay-Out'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-widest">
+                      <span className="opacity-80">Progress</span>
+                      <span>${(user.totalEarned || 0).toFixed(2)} / $50.00</span>
+                    </div>
+                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden border border-white/5">
+                      <div className="h-full bg-[#38bdf8] transition-all duration-1000" style={{ width: `${payoutProgress}%` }}></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="relative z-10 pt-8 mt-auto">
+              <p className="text-[10px] text-blue-300 font-medium italic opacity-70">Earnings are verified 30 days after signup.</p>
             </div>
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { label: 'Lifetime Commissions', value: `$${totalEarnings.toFixed(2)}`, icon: DollarSign, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-          { label: 'Pending Payout', value: `$${pendingEarnings.toFixed(2)}`, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-          { label: 'Current Conversion', value: customers.length > 0 ? `${((commissions.length / customers.length) * 100).toFixed(1)}%` : '0%', icon: PieChart, color: 'text-sky-400', bg: 'bg-sky-500/10' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm relative group overflow-hidden">
-            <div className={`w-14 h-14 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-6`}>
-              <stat.icon className="w-7 h-7" />
+    );
+  };
+
+  const renderClaimsView = () => (
+    <div className="space-y-6 animate-fade-in no-scrollbar pb-10">
+      {/* Claims Stats Cards Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {claimsStats.map((stat, i) => (
+          <div key={i} className="bg-white p-4 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col gap-3 md:gap-4">
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${stat.bg} ${stat.color}`}>
+              <stat.icon className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{stat.label}</p>
-            <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
-            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ArrowUpRight className="w-5 h-5 text-slate-300" />
+            <div>
+              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 md:mb-1">{stat.label}</p>
+              <p className="text-base md:text-xl font-bold text-slate-900">{stat.value}</p>
             </div>
           </div>
         ))}
       </div>
-      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-slate-900">Commission History</h3>
-          <button className="text-sm font-bold text-blue-900 flex items-center gap-2 hover:underline">
-            <CreditCard className="w-4 h-4" /> Request Payout
-          </button>
-        </div>
-        {commissions.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50">
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction ID</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Plan</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Amount</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {commissions.map((comm) => (
-                  <tr key={comm.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-8 py-6 text-sm font-bold text-slate-500">{comm.id}</td>
-                    <td className="px-8 py-6">
-                      <p className="text-sm font-bold text-slate-900">{comm.customerName}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">{comm.date}</p>
-                    </td>
-                    <td className="px-8 py-6 text-center">
-                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                        comm.plan === 'PREMIUM' ? 'bg-sky-100 text-sky-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {comm.plan}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6 text-right font-black text-slate-900">${comm.amount.toFixed(2)}</td>
-                    <td className="px-8 py-6 text-right">
-                      <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                        comm.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {comm.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="py-24 text-center">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
-              <Activity className="w-10 h-10" />
-            </div>
-            <p className="text-slate-500 font-bold">No commission records found yet.</p>
-            <p className="text-xs text-slate-400 mt-2">Earnings will appear here as your customers upgrade to advocacy plans.</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
-  return (
-    <div className="space-y-8 animate-fade-in pb-20">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900 brand-font">Territory Management</h2>
-          <p className="text-slate-500">Managing {user.fullName}'s customers and territory insights.</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-          <div className="flex items-center bg-slate-100 p-1.5 rounded-2xl">
-            <button 
-              onClick={() => { setActiveTab('CUSTOMERS'); navigate('/dashboard/customers'); }}
-              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-xs transition-all ${activeTab === 'CUSTOMERS' ? 'bg-white text-blue-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-            >
-              Directory
-            </button>
-            <button 
-              onClick={() => { setActiveTab('CLAIMS'); navigate('/dashboard/claims'); }}
-              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-xs transition-all ${activeTab === 'CLAIMS' ? 'bg-white text-blue-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-            >
-              Claims
-            </button>
-            <button 
-              onClick={() => { setActiveTab('REWARDS'); navigate('/dashboard/rewards'); }}
-              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-xs transition-all ${activeTab === 'REWARDS' ? 'bg-white text-blue-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-            >
-              Earnings
-            </button>
-          </div>
-          {activeTab === 'CUSTOMERS' && (
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="px-6 py-4 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-900/10 active:scale-95"
-            >
-              <UserPlus className="w-5 h-5" /> Register Customer
-            </button>
-          )}
-        </div>
-      </div>
-
-      {activeTab === 'REWARDS' && renderRewardsView()}
-      {activeTab === 'CLAIMS' && renderClaimsView()}
-      {activeTab === 'CUSTOMERS' && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[
-              { label: 'Total Customers', value: customers.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-              { label: 'Premium Users', value: customers.filter(c => c.plan === 'PREMIUM').length, icon: ShieldCheck, color: 'text-sky-600', bg: 'bg-sky-50' },
-              { label: 'Territory Revenue', value: `$${(customers.reduce((acc, curr) => acc + (curr.plan === 'PREMIUM' ? 49.99 : curr.plan === 'BASIC' ? 19.99 : 0), 0)).toFixed(2)}`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { label: 'Customer Docs', value: customers.reduce((acc, curr) => acc + curr.documents.length, 0), icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-            ].map((stat, i) => (
-              <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm group hover:shadow-md transition-shadow">
-                <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <stat.icon className="w-6 h-6" />
-                </div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-              </div>
-            ))}
-          </div>
-          <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-              <h3 className="text-xl font-bold text-slate-900">Your Customers</h3>
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                <div className="relative flex-grow md:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="text" placeholder="Search customers..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all" />
-                </div>
-                <button className="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors"><Filter className="w-5 h-5 text-slate-600" /></button>
-              </div>
+      {/* Claims Queue Content */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+        <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <History className="w-4 h-4" />
             </div>
-            {filteredCustomers.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
+            <h2 className="text-sm font-bold text-slate-900">Regional Advocacy Queue</h2>
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+              <input 
+                type="text" 
+                placeholder="Search case ID..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full sm:w-64 pl-10 pr-4 py-2 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none" 
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-grow flex flex-col">
+          {customers.length > 0 ? (
+            <>
+              {/* Desktop Claims Table */}
+              <div className="hidden md:block overflow-x-auto no-scrollbar">
+                <table className="w-full text-left min-w-[700px]">
                   <thead>
-                    <tr className="bg-slate-50">
-                      <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Customer</th>
-                      <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Plan</th>
-                      <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Type</th>
-                      <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Docs</th>
-                      <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                    <tr className="border-b border-slate-50 bg-slate-50/30">
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Case ID & Customer</th>
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Asset Type</th>
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Priority</th>
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Advocacy Status</th>
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {filteredCustomers.map((customer) => (
-                      <tr key={customer.id} className="hover:bg-blue-50/30 transition-colors group">
-                        <td className="px-8 py-6">
-                          <div>
-                            <p className="font-bold text-slate-900 group-hover:text-blue-900 transition-colors">{customer.name}</p>
-                            <p className="text-xs text-slate-500">{customer.email}</p>
+                    {customers.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((customer) => (
+                      <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-10 py-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-[10px]">#{customer.id.substring(0,3)}</div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-900">{customer.name}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Case Reference: {customer.id}</p>
+                            </div>
                           </div>
                         </td>
-                        <td className="px-8 py-6">
-                          <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${customer.plan === 'PREMIUM' ? 'bg-sky-100 text-sky-700' : customer.plan === 'BASIC' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
-                            {customer.plan}
-                          </span>
-                        </td>
-                        <td className="px-8 py-6 text-center">
-                          <span className="text-xs font-bold text-slate-600 flex items-center justify-center gap-1.5">
+                        <td className="px-10 py-6">
+                          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
                             {customer.claimType === 'HOME' ? <HomeIcon className="w-3.5 h-3.5" /> : <Car className="w-3.5 h-3.5" />}
-                            {customer.claimType}
+                            {customer.claimType} ADVOCACY
+                          </div>
+                        </td>
+                        <td className="px-10 py-6">
+                           <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
+                             customer.plan === 'PREMIUM' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                           }`}>
+                             {customer.plan === 'PREMIUM' ? 'HIGH' : 'MEDIUM'}
+                           </span>
+                        </td>
+                        <td className="px-10 py-6">
+                          <span className={`flex items-center gap-1.5 text-[10px] font-bold ${customer.status === 'Active' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${customer.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></div>
+                            {customer.status === 'Active' ? 'Processing' : 'Under Review'}
                           </span>
                         </td>
-                        <td className="px-8 py-6 text-center">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-600"><FileText className="w-3.5 h-3.5" /> {customer.documents.length}</span>
-                        </td>
-                        <td className="px-8 py-6 text-right">
-                          <button onClick={() => setSelectedCustomer(customer)} className="p-2 hover:bg-white rounded-lg transition-colors text-blue-900 font-bold text-xs flex items-center gap-1 ml-auto">Details <ChevronRight className="w-4 h-4" /></button>
+                        <td className="px-10 py-6 text-right">
+                          <button onClick={() => setEditingCustomer(customer)} className="text-[#1e3a8a] font-bold text-xs hover:underline flex items-center gap-1.5 justify-end w-full">
+                            <FileSearch className="w-3.5 h-3.5" /> Full Audit
+                          </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <div className="py-32 text-center">
-                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300"><Database className="w-10 h-10" /></div>
-                <h4 className="text-lg font-bold text-slate-900 mb-2">{searchTerm ? 'No results found' : 'No Customers Registered'}</h4>
-                <p className="text-slate-500 max-w-sm mx-auto mb-8">{searchTerm ? 'Try adjusting your search filters.' : "You haven't registered any customers in your territory yet."}</p>
-                {!searchTerm && <button onClick={() => setShowAddModal(true)} className="text-blue-900 font-bold hover:underline flex items-center gap-2 mx-auto"><UserPlus className="w-4 h-4" /> Add your first customer</button>}
+
+              {/* Mobile Claims List */}
+              <div className="md:hidden divide-y divide-slate-50">
+                {customers.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((customer) => (
+                  <div key={customer.id} className="p-6 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                            {customer.claimType === 'HOME' ? <HomeIcon className="w-5 h-5" /> : <Car className="w-5 h-5" />}
+                         </div>
+                         <div>
+                            <h3 className="font-bold text-slate-900 text-sm">{customer.name}</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Case: {customer.id}</p>
+                         </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${customer.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                        {customer.status === 'Active' ? 'Processing' : 'Awaiting Audit'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-slate-50 p-3 rounded-xl">
+                       <span>Priority: <span className={customer.plan === 'PREMIUM' ? 'text-red-500' : 'text-amber-500'}>{customer.plan === 'PREMIUM' ? 'HIGH' : 'MEDIUM'}</span></span>
+                       <button onClick={() => setEditingCustomer(customer)} className="text-blue-600 flex items-center gap-1">Audit Log <ChevronRight className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </>
+          ) : (
+            <div className="flex-grow flex flex-col items-center justify-center p-12 text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-200">
+                <ClipboardCheck className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-bold text-[#0f172a] mb-2">No Regional Claims</h3>
+              <p className="text-sm text-slate-400 max-w-sm font-medium">There are no active advocacy cases for your directory customers yet.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderDirectoryView = () => (
+    <>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {directoryStats.map((stat, i) => (
+          <div key={i} className="bg-white p-4 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col gap-3 md:gap-4">
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center ${stat.bg} ${stat.color}`}>
+              <stat.icon className="w-4 h-4 md:w-5 md:h-5" />
+            </div>
+            <div>
+              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 md:mb-1">{stat.label}</p>
+              <p className="text-base md:text-xl font-bold text-slate-900">{stat.value}</p>
+            </div>
           </div>
-        </>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+        <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <h2 className="text-sm font-bold text-slate-900">Territory Customers</h2>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+              <input 
+                type="text" 
+                placeholder="Search name..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full sm:w-64 pl-10 pr-4 py-2 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none" 
+              />
+            </div>
+            <button className="p-2 border border-slate-100 rounded-xl text-slate-400 hover:bg-slate-50 transition-all"><Filter className="w-4 h-4" /></button>
+          </div>
+        </div>
+
+        <div className="flex-grow flex flex-col">
+          {customers.length > 0 ? (
+            <>
+              <div className="hidden md:block overflow-x-auto no-scrollbar">
+                <table className="w-full text-left min-w-[600px]">
+                  <thead>
+                    <tr className="border-b border-slate-50 bg-slate-50/30">
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Plan</th>
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone</th>
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                      <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {customers.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((customer) => (
+                      <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-10 py-6">
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{customer.name}</p>
+                            <p className="text-[11px] text-slate-400">{customer.email}</p>
+                          </div>
+                        </td>
+                        <td className="px-10 py-6">
+                          <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${customer.plan === 'PREMIUM' ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-600'}`}>
+                            {customer.plan}
+                          </span>
+                        </td>
+                        <td className="px-10 py-6 text-xs font-bold text-slate-500">{customer.phone}</td>
+                        <td className="px-10 py-6">
+                          <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                            {customer.status}
+                          </span>
+                        </td>
+                        <td className="px-10 py-6 text-right">
+                          <button onClick={() => setEditingCustomer(customer)} className="text-[#1e3a8a] font-bold text-xs hover:underline flex items-center gap-1.5 justify-end w-full">
+                            <Edit2 className="w-3.5 h-3.5" /> View/Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="md:hidden divide-y divide-slate-50">
+                {customers.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((customer) => (
+                  <div key={customer.id} className="p-6 space-y-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">{customer.name}</h3>
+                        <p className="text-xs text-slate-400">{customer.email}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest ${customer.plan === 'PREMIUM' ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-600'}`}>{customer.plan}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Phone & Territory</p>
+                        <div className="flex items-center gap-4">
+                          <a href={`tel:${customer.phone}`} className="flex items-center gap-1.5 text-xs font-bold text-[#1e3a8a]"><PhoneCall className="w-3 h-3" /> {customer.phone}</a>
+                          <span className="text-[10px] text-slate-300">•</span>
+                          <p className="text-xs text-slate-500 font-medium">{customer.address.split(',')[0]}</p>
+                        </div>
+                      </div>
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        {customer.status}
+                      </span>
+                    </div>
+                    <button onClick={() => setEditingCustomer(customer)} className="w-full py-3 bg-[#f8fafc] border border-slate-100 rounded-xl text-[#1e3a8a] font-bold text-xs flex items-center justify-center gap-2 active:bg-blue-50 transition-all">
+                      <Edit2 className="w-3.5 h-3.5" /> Manage Customer
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex-grow flex flex-col items-center justify-center p-12 text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-200"><Database className="w-10 h-10" /></div>
+              <h3 className="text-xl font-bold text-[#0f172a] mb-2">No Customers Registered</h3>
+              <p className="text-sm text-slate-400 max-w-sm mb-8 font-medium">You haven't registered any customers in your territory yet.</p>
+              <button onClick={() => setShowAddModal(true)} className="text-[#1e3a8a] font-bold text-xs flex items-center gap-2 hover:underline transition-all"><UserPlus className="w-4 h-4" /> Add your first customer</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="p-4 md:p-6 lg:p-10 space-y-6 max-w-[1600px] mx-auto animate-fade-in no-scrollbar overflow-x-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+        {activeTab !== 'Earnings' && activeTab !== 'Profile' && (
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-bold text-[#0f172a] brand-font tracking-tight">Regional Management</h1>
+            <p className="text-xs md:text-sm text-slate-400 font-medium tracking-tight">Managing {user.fullName}'s customers and territory insights.</p>
+          </div>
+        )}
+        
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+          <div className="flex items-center bg-white border border-slate-100 p-1 rounded-2xl shadow-sm w-full sm:w-auto overflow-x-auto no-scrollbar">
+            {[
+              { id: 'Directory', label: 'Directory', path: '/dashboard/customers' },
+              { id: 'Claims', label: 'Claims', path: '/dashboard/claims' },
+              { id: 'Earnings', label: 'Earnings', path: '/dashboard/rewards' },
+              { id: 'Profile', label: 'Profile', path: '/dashboard/profile' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  navigate(tab.path);
+                }}
+                className={`flex-1 sm:flex-none px-6 py-2.5 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-[#f1f5f9] text-[#1e3a8a] shadow-inner' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          
+          {activeTab === 'Directory' && (
+            <button onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-2 bg-[#1e3a8a] text-white w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-xs shadow-lg shadow-blue-900/10 hover:bg-blue-800 transition-all active:scale-95">
+              <UserPlus className="w-4 h-4" /> Register Customer
+            </button>
+          )}
+        </div>
+      </div>
+
+      {activeTab === 'Earnings' ? (
+        renderRewardsDashboard()
+      ) : activeTab === 'Profile' ? (
+        renderProfile()
+      ) : activeTab === 'Claims' ? (
+        renderClaimsView()
+      ) : (
+        renderDirectoryView()
       )}
 
-      {/* Add Customer Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-          <div className="bg-white w-full max-w-lg rounded-[40px] shadow-2xl p-10 relative">
-            <button onClick={() => setShowAddModal(false)} className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all">
-              <X className="w-6 h-6" />
-            </button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl p-8 lg:p-10 relative overflow-y-auto max-h-[95vh] no-scrollbar">
+            <button onClick={() => setShowAddModal(false)} className="absolute top-6 right-6 p-2 text-slate-300 hover:text-slate-900 hover:bg-slate-50 rounded-full transition-all"><X className="w-6 h-6" /></button>
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-blue-50 text-blue-900 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <UserPlus className="w-8 h-8" />
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 brand-font">Register Customer</h3>
-              <p className="text-slate-500">Initialize a new client in your territory.</p>
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-blue-50 text-[#1e3a8a] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-900/5"><UserPlus className="w-7 h-7 md:w-8 md:h-8" /></div>
+              <h3 className="text-xl font-bold text-slate-900 brand-font">Register Customer</h3>
+              <p className="text-sm text-slate-400 font-medium mt-1">Initialize a new regional client account.</p>
             </div>
-            <form onSubmit={handleAddCustomer} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                <input name="name" type="text" required placeholder="John Smith" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm" />
+            <form onSubmit={handleAddCustomer} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Full Legal Name</label>
+                <input name="name" type="text" required placeholder="John Smith" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all text-sm font-bold text-slate-900" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-                  <input name="email" type="email" required placeholder="john@example.com" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Email</label>
+                  <input name="email" type="email" required placeholder="john@example.com" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all text-sm font-bold text-slate-900" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Phone</label>
-                  <input name="phone" type="tel" required placeholder="239-000-0000" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm" />
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Phone</label>
+                  <input name="phone" type="tel" required placeholder="239-000-0000" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all text-sm font-bold text-slate-900" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Plan Level</label>
-                  <select name="plan" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Advocacy Tier</label>
+                  <select name="plan" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700">
                     <option value="FREE">Free Tier</option>
                     <option value="BASIC">Basic ($20 Share)</option>
                     <option value="PREMIUM">Premium ($100 Share)</option>
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Primary Claim Type</label>
-                  <select name="claimType" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Asset Focus</label>
+                  <select name="claimType" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700">
                     <option value="HOME">Home Warranty</option>
                     <option value="AUTO">Auto Warranty</option>
                   </select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Home Address</label>
-                <input name="address" type="text" required placeholder="Fort Myers, FL" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm" />
+              <div className="space-y-1.5 pb-4">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Territory Address</label>
+                <input name="address" type="text" required placeholder="Fort Myers, FL" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-900" />
               </div>
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="w-full py-5 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 active:scale-95 disabled:bg-slate-300"
-              >
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5" /> Initialize Account</>}
+              <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-[#1e3a8a] text-white rounded-2xl font-bold text-sm hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 flex items-center justify-center gap-3 active:scale-[0.98] disabled:bg-slate-300">
+                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Registration'}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Customer Detail Modal */}
-      {selectedCustomer && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in overflow-y-auto">
-          <div className="bg-white w-full max-w-3xl rounded-[40px] shadow-2xl overflow-hidden my-8 relative">
-            <div className="bg-blue-900 p-8 lg:p-12 text-white flex justify-between items-start">
-              <div>
-                <button onClick={() => setSelectedCustomer(null)} className="flex items-center gap-2 text-xs font-bold text-sky-400 hover:text-white transition-colors mb-6 group"><ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Directory</button>
-                <h3 className="text-3xl font-bold brand-font mb-2">{selectedCustomer.name}</h3>
-                <div className="flex flex-wrap gap-4 text-xs font-bold text-blue-100 uppercase tracking-widest">
-                  <span className="flex items-center gap-1.5"><Mail className="w-4 h-4 text-sky-400" /> {selectedCustomer.email}</span>
-                  <span className="flex items-center gap-1.5"><Smartphone className="w-4 h-4 text-sky-400" /> {selectedCustomer.phone}</span>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <span className={`px-4 py-2 rounded-xl text-xs font-black tracking-widest uppercase border border-white/20 ${selectedCustomer.plan === 'PREMIUM' ? 'bg-sky-500 text-white' : 'bg-white/10 text-white'}`}>
-                  {selectedCustomer.plan} Plan
-                </span>
-                <span className="text-[10px] font-bold text-sky-300 uppercase tracking-[0.2em]">{selectedCustomer.claimType} FOCUS</span>
+      {editingCustomer && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl p-6 md:p-12 relative max-h-[90vh] overflow-y-auto no-scrollbar">
+            <button onClick={() => setEditingCustomer(null)} className="absolute top-6 right-6 p-2 text-slate-300 hover:text-slate-900 hover:bg-slate-50 rounded-full transition-all"><X className="w-6 h-6" /></button>
+            <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-6 mb-8 md:mb-10">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-50 text-[#1e3a8a] rounded-3xl flex items-center justify-center shadow-lg shrink-0"><UserIcon className="w-8 h-8 md:w-10 md:h-10" /></div>
+              <div className="text-center sm:text-left">
+                <h3 className="text-xl md:text-2xl font-bold text-slate-900 brand-font">Manage Regional Customer</h3>
+                <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">Customer ID: <span className="text-[#1e3a8a] font-bold tracking-tight">{editingCustomer.id}</span> • Registered on {editingCustomer.registrationDate}</p>
               </div>
             </div>
-            <div className="p-8 lg:p-12 grid grid-cols-1 md:grid-cols-3 gap-12">
-              <div className="md:col-span-2 space-y-8">
-                <div>
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Customer Document Vault</h4>
-                  <div className="space-y-4">
-                    {selectedCustomer.documents.length > 0 ? selectedCustomer.documents.map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between p-5 bg-slate-50 border border-slate-100 rounded-3xl hover:bg-white hover:shadow-md transition-all group">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-blue-900 group-hover:scale-110 transition-transform"><FileText className="w-6 h-6" /></div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900 truncate max-w-[180px]">{doc.name}</p>
-                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">{doc.type} • {doc.size}</p>
-                          </div>
-                        </div>
-                        <button className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Trash2 className="w-5 h-5" /></button>
-                      </div>
-                    )) : (
-                      <div className="p-10 border-2 border-dashed border-slate-100 rounded-3xl text-center"><FileText className="w-10 h-10 text-slate-200 mx-auto mb-4" /><p className="text-sm font-bold text-slate-400">No documents uploaded yet.</p></div>
-                    )}
+            <form onSubmit={handleUpdateCustomer} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Full Name</label>
+                  <div className="relative group">
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-[#1e3a8a] transition-colors" />
+                    <input name="name" type="text" defaultValue={editingCustomer.name} required className="w-full pl-12 pr-5 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#1e3a8a]/5 transition-all text-sm font-bold text-slate-900" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Email Address</label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-[#1e3a8a] transition-colors" />
+                    <input name="email" type="email" defaultValue={editingCustomer.email} required className="w-full pl-12 pr-5 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#1e3a8a]/5 transition-all text-sm font-bold text-slate-900" />
                   </div>
                 </div>
               </div>
-              <div className="space-y-8">
-                <div className="p-8 bg-slate-950 rounded-[32px] text-white">
-                  <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6">Upload Files</h4>
-                  <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center hover:border-sky-500 hover:bg-white/5 transition-all cursor-pointer group" onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadDoc(selectedCustomer.id, file); }; input.click(); }}>
-                    <Upload className="w-8 h-8 text-slate-600 group-hover:text-sky-400 mx-auto mb-4 group-hover:scale-110 transition-transform" />
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Add Contract</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Phone Number</label>
+                  <div className="relative group">
+                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-[#1e3a8a] transition-colors" />
+                    <input name="phone" type="tel" defaultValue={editingCustomer.phone} required className="w-full pl-12 pr-5 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#1e3a8a]/5 transition-all text-sm font-bold text-slate-900" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Customer Location</label>
+                  <div className="relative group">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-[#1e3a8a] transition-colors" />
+                    <input name="address" type="text" defaultValue={editingCustomer.address} required className="w-full pl-12 pr-5 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#1e3a8a]/5 transition-all text-sm font-bold text-slate-900" />
                   </div>
                 </div>
               </div>
-            </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Advocacy Plan</label>
+                  <div className="relative group">
+                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-[#1e3a8a] transition-colors" />
+                    <select name="plan" defaultValue={editingCustomer.plan} className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#1e3a8a]/5 transition-all text-sm font-bold text-slate-700 appearance-none">
+                      <option value="FREE">Free Tier</option>
+                      <option value="BASIC">Basic Advocacy</option>
+                      <option value="PREMIUM">Premium Advocacy</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Primary Asset</label>
+                  <div className="relative group">
+                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-[#1e3a8a] transition-colors" />
+                    <select name="claimType" defaultValue={editingCustomer.claimType} className="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#1e3a8a]/5 transition-all text-sm font-bold text-slate-700 appearance-none">
+                      <option value="HOME">Home Warranty</option>
+                      <option value="AUTO">Auto Warranty</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-6 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
+                <button type="button" onClick={() => handleDeleteCustomer(editingCustomer.id)} className="w-full md:w-auto px-6 py-4 bg-red-50 text-red-600 rounded-2xl font-bold text-xs hover:bg-red-100 transition-all flex items-center justify-center gap-2 order-2 md:order-1"><Trash2 className="w-4 h-4" /> Remove Customer</button>
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto order-1 md:order-2">
+                  <button type="button" onClick={() => setEditingCustomer(null)} className="w-full sm:w-auto px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs hover:bg-slate-200 transition-all">Cancel</button>
+                  <button type="submit" disabled={isSubmitting} className="w-full sm:w-auto px-12 py-4 bg-[#1e3a8a] text-white rounded-2xl font-bold text-xs hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 active:scale-[0.98] disabled:bg-slate-300">
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {isSubmitting ? 'Updating...' : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -622,8 +966,9 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user }) => {
   );
 };
 
-const HomeIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+// Fixed non-existent lucide icon import: replaced with FileSearch which is commonly available or added manually
+const FileSearch = ({ className }: { className?: string }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="m16 17-2.45-2.45"/></svg>
 );
 
 export default PartnerDashboard;
