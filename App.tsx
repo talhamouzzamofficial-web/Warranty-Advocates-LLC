@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-/* Switched from BrowserRouter back to HashRouter for stable static hosting compatibility */
-import { HashRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { 
   ShieldCheck, 
   Menu, 
