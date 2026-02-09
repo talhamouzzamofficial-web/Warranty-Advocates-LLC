@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Users, 
-  MapPin, 
-  ClipboardCheck, 
-  Plus, 
+import {
+  Users,
+  MapPin,
+  ClipboardCheck,
+  Plus,
   Car,
-  ChevronRight, 
-  UserPlus, 
+  ChevronRight,
+  UserPlus,
   TrendingUp,
   Search,
   Filter,
@@ -169,7 +169,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
   const handleUpdateCustomer = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingCustomer) return;
-    
+
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
     const updatedCustomer: RegionalCustomer = {
@@ -190,13 +190,13 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
 
   const handleDeleteCustomer = async (id: string) => {
     if (!window.confirm('Are you sure you want to remove this customer from your regional management? This action cannot be undone.')) return;
-    
+
     setCustomers(customers.filter(c => c.id !== id));
     setEditingCustomer(null);
   };
 
   const handleCopyPartnerLink = () => {
-    const link = `${window.location.origin}/#/signup?partner=${user.referralCode || user.id.substring(0, 6)}`;
+    const link = `${window.location.origin}/signup?partner=${user.referralCode || user.id.substring(0, 6)}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -274,8 +274,8 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
                     <UserIcon className="w-12 h-12 md:w-24 md:h-24" />
                   )}
                 </div>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => profileImageInputRef.current?.click()}
                   className="absolute bottom-[-10px] right-[-10px] w-10 h-10 md:w-12 md:h-12 bg-sky-500 text-white rounded-2xl flex items-center justify-center shadow-xl hover:bg-sky-400 transition-all border-4 border-white active:scale-90"
                   title="Upload New Photo"
@@ -286,27 +286,27 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
               </div>
 
               <div className="flex-grow pb-4 text-center lg:text-left">
-                 <h3 className="text-xl md:text-2xl font-bold text-slate-900 leading-none">{user.fullName}</h3>
-                 <p className="text-sky-600 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] mt-2">Certified Regional Partner • Member since {new Date().getFullYear()}</p>
+                <h3 className="text-xl md:text-2xl font-bold text-slate-900 leading-none">{user.fullName}</h3>
+                <p className="text-sky-600 font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] mt-2">Certified Regional Partner • Member since {new Date().getFullYear()}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-8 md:gap-y-12">
               <div className="space-y-6 md:space-y-8">
                 <div className="flex items-center gap-3 mb-2">
-                   <div className="w-1 h-5 md:w-1.5 md:h-6 bg-blue-600 rounded-full"></div>
-                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Contact Information</h4>
+                  <div className="w-1 h-5 md:w-1.5 md:h-6 bg-blue-600 rounded-full"></div>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Contact Information</h4>
                 </div>
-                
+
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Legal Name</label>
                   <div className="relative group">
                     <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                    <input 
-                      type="text" 
-                      value={profileForm.fullName} 
-                      onChange={(e) => setProfileForm({...profileForm, fullName: e.target.value})}
-                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white transition-all text-sm" 
+                    <input
+                      type="text"
+                      value={profileForm.fullName}
+                      onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white transition-all text-sm"
                     />
                   </div>
                 </div>
@@ -315,11 +315,11 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Partner Email (Read Only)</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={profileForm.email} 
-                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-400 focus:outline-none cursor-not-allowed italic text-sm" 
+                    <input
+                      type="text"
+                      readOnly
+                      value={profileForm.email}
+                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-400 focus:outline-none cursor-not-allowed italic text-sm"
                     />
                   </div>
                 </div>
@@ -328,12 +328,12 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Direct Phone</label>
                   <div className="relative group">
                     <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                    <input 
-                      type="text" 
-                      value={profileForm.phone} 
-                      onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
+                    <input
+                      type="text"
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
                       placeholder="239-499-3100"
-                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white transition-all text-sm" 
+                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white transition-all text-sm"
                     />
                   </div>
                 </div>
@@ -341,20 +341,20 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
 
               <div className="space-y-6 md:space-y-8">
                 <div className="flex items-center gap-3 mb-2">
-                   <div className="w-1 h-5 md:w-1.5 md:h-6 bg-emerald-500 rounded-full"></div>
-                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Territory Address</h4>
+                  <div className="w-1 h-5 md:w-1.5 md:h-6 bg-emerald-500 rounded-full"></div>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Territory Address</h4>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Office Street Address</label>
                   <div className="relative group">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                    <input 
-                      type="text" 
-                      value={profileForm.address} 
-                      onChange={(e) => setProfileForm({...profileForm, address: e.target.value})}
+                    <input
+                      type="text"
+                      value={profileForm.address}
+                      onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
                       placeholder="e.g. 500 Legacy Way"
-                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white transition-all text-sm" 
+                      className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 focus:bg-white transition-all text-sm"
                     />
                   </div>
                 </div>
@@ -364,12 +364,12 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">State / Region</label>
                     <div className="relative group">
                       <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                      <input 
-                        type="text" 
-                        value={profileForm.state} 
-                        onChange={(e) => setProfileForm({...profileForm, state: e.target.value})}
+                      <input
+                        type="text"
+                        value={profileForm.state}
+                        onChange={(e) => setProfileForm({ ...profileForm, state: e.target.value })}
                         placeholder="Florida"
-                        className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-900/5 focus:bg-white transition-all text-sm" 
+                        className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-900/5 focus:bg-white transition-all text-sm"
                       />
                     </div>
                   </div>
@@ -377,12 +377,12 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Zip Code</label>
                     <div className="relative group">
                       <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                      <input 
-                        type="text" 
-                        value={profileForm.postcode} 
-                        onChange={(e) => setProfileForm({...profileForm, postcode: e.target.value})}
+                      <input
+                        type="text"
+                        value={profileForm.postcode}
+                        onChange={(e) => setProfileForm({ ...profileForm, postcode: e.target.value })}
                         placeholder="33901"
-                        className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-900/5 focus:bg-white transition-all text-sm" 
+                        className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-900/5 focus:bg-white transition-all text-sm"
                       />
                     </div>
                   </div>
@@ -392,8 +392,8 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
 
             <div className="mt-16 pt-10 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-6">
               <div className="flex items-center gap-3">
-                 <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                 <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Partner Data is 256-Bit Encrypted</p>
+                <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Partner Data is 256-Bit Encrypted</p>
               </div>
               <div className="flex gap-4 items-center w-full sm:w-auto">
                 {saveSuccess && (
@@ -469,11 +469,11 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
             <div className="relative z-10 h-full flex flex-col">
               <h3 className="text-xl font-bold mb-4 brand-font">Payout Progress</h3>
               <p className="text-blue-100 text-xs leading-relaxed mb-10 max-w-xs opacity-90">
-                {isPayoutReady 
-                  ? "Milestone complete! You are eligible for a regional commission payout." 
+                {isPayoutReady
+                  ? "Milestone complete! You are eligible for a regional commission payout."
                   : "Reach $50.00 in earnings to unlock your first withdrawal via PayPal or Bank Transfer."}
               </p>
-              
+
               <div className="mt-auto">
                 {payoutSuccess ? (
                   <div className="p-4 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex flex-col items-center text-center animate-in zoom-in duration-300">
@@ -487,7 +487,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
                       <span className="text-emerald-400">Available to Withdraw</span>
                       <span className="text-white">${(user.totalEarned || 0).toFixed(2)}</span>
                     </div>
-                    <button 
+                    <button
                       onClick={handlePayoutRequest}
                       disabled={isRequestingPayout}
                       className="w-full py-4 bg-[#0ea5e9] text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-sky-400 shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
@@ -547,12 +547,12 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-              <input 
-                type="text" 
-                placeholder="Search case ID..." 
+              <input
+                type="text"
+                placeholder="Search case ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-64 pl-10 pr-4 py-2 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none" 
+                className="w-full sm:w-64 pl-10 pr-4 py-2 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none"
               />
             </div>
           </div>
@@ -578,7 +578,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
                       <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="px-10 py-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-[10px]">#{customer.id.substring(0,3)}</div>
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-[10px]">#{customer.id.substring(0, 3)}</div>
                             <div>
                               <p className="text-sm font-bold text-slate-900">{customer.name}</p>
                               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Case Reference: {customer.id}</p>
@@ -592,11 +592,10 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
                           </div>
                         </td>
                         <td className="px-10 py-6">
-                           <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
-                             customer.plan === 'PREMIUM' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
-                           }`}>
-                             {customer.plan === 'PREMIUM' ? 'HIGH' : 'MEDIUM'}
-                           </span>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${customer.plan === 'PREMIUM' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                            }`}>
+                            {customer.plan === 'PREMIUM' ? 'HIGH' : 'MEDIUM'}
+                          </span>
                         </td>
                         <td className="px-10 py-6">
                           <span className={`flex items-center gap-1.5 text-[10px] font-bold ${customer.status === 'Active' ? 'text-emerald-500' : 'text-amber-500'}`}>
@@ -621,21 +620,21 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
                   <div key={customer.id} className="p-6 space-y-4">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-3">
-                         <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                            {customer.claimType === 'HOME' ? <HomeIcon className="w-5 h-5" /> : <Car className="w-5 h-5" />}
-                         </div>
-                         <div>
-                            <h3 className="font-bold text-slate-900 text-sm">{customer.name}</h3>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Case: {customer.id}</p>
-                         </div>
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                          {customer.claimType === 'HOME' ? <HomeIcon className="w-5 h-5" /> : <Car className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-900 text-sm">{customer.name}</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Case: {customer.id}</p>
+                        </div>
                       </div>
                       <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${customer.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                         {customer.status === 'Active' ? 'Processing' : 'Awaiting Audit'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-slate-50 p-3 rounded-xl">
-                       <span>Priority: <span className={customer.plan === 'PREMIUM' ? 'text-red-500' : 'text-amber-500'}>{customer.plan === 'PREMIUM' ? 'HIGH' : 'MEDIUM'}</span></span>
-                       <button onClick={() => setEditingCustomer(customer)} className="text-blue-600 flex items-center gap-1">Audit Log <ChevronRight className="w-3 h-3" /></button>
+                      <span>Priority: <span className={customer.plan === 'PREMIUM' ? 'text-red-500' : 'text-amber-500'}>{customer.plan === 'PREMIUM' ? 'HIGH' : 'MEDIUM'}</span></span>
+                      <button onClick={() => setEditingCustomer(customer)} className="text-blue-600 flex items-center gap-1">Audit Log <ChevronRight className="w-3 h-3" /></button>
                     </div>
                   </div>
                 ))}
@@ -677,12 +676,12 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-              <input 
-                type="text" 
-                placeholder="Search name..." 
+              <input
+                type="text"
+                placeholder="Search name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-64 pl-10 pr-4 py-2 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none" 
+                className="w-full sm:w-64 pl-10 pr-4 py-2 bg-slate-50/50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none"
               />
             </div>
             <button className="p-2 border border-slate-100 rounded-xl text-slate-400 hover:bg-slate-50 transition-all"><Filter className="w-4 h-4" /></button>
@@ -788,7 +787,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
             <p className="text-xs md:text-sm text-slate-400 font-medium tracking-tight">Managing {user.fullName}'s customers and territory insights.</p>
           </div>
         )}
-        
+
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
           <div className="flex items-center bg-white border border-slate-100 p-1 rounded-2xl shadow-sm w-full sm:w-auto overflow-x-auto no-scrollbar">
             {[
@@ -809,7 +808,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
               </button>
             ))}
           </div>
-          
+
           {activeTab === 'Directory' && (
             <button onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-2 bg-[#1e3a8a] text-white w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-xs shadow-lg shadow-blue-900/10 hover:bg-blue-800 transition-all active:scale-95">
               <UserPlus className="w-4 h-4" /> Register Customer
@@ -968,7 +967,7 @@ const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ user, onUpdateProfi
 
 // Fixed non-existent lucide icon import: replaced with FileSearch which is commonly available or added manually
 const FileSearch = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="m16 17-2.45-2.45"/></svg>
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="M10 13a2 2 0 1 0 4 0 2 2 0 1 0-4 0" /><path d="m16 17-2.45-2.45" /></svg>
 );
 
 export default PartnerDashboard;

@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  ShieldCheck, 
-  FileText, 
-  Plus, 
-  Clock, 
-  CheckCircle2, 
+import {
+  ShieldCheck,
+  FileText,
+  Plus,
+  Clock,
+  CheckCircle2,
   Zap,
   ClipboardCheck,
   ArrowLeft,
@@ -62,7 +62,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
   const isFreeTier = !user.plan || user.plan === 'FREE';
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  
+
   const [claims, setClaims] = useState<Claim[]>(() => {
     const globalClaims = JSON.parse(localStorage.getItem('wa_global_claims') || '[]');
     return globalClaims.filter((c: Claim) => c.userId === user.id);
@@ -72,7 +72,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
     const saved = localStorage.getItem(`wa_user_warranties_${user.id}`);
     return saved ? JSON.parse(saved) : [];
   });
-  
+
   const [isAddingClaim, setIsAddingClaim] = useState(false);
   const [editingClaim, setEditingClaim] = useState<Claim | null>(null);
   const [isAddingWarranty, setIsAddingWarranty] = useState(false);
@@ -81,7 +81,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
   const [copied, setCopied] = useState(false);
   const [isRequestingPayout, setIsRequestingPayout] = useState(false);
   const [payoutSuccess, setPayoutSuccess] = useState(false);
-  
+
   // Profile Management State
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -106,8 +106,8 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
   }, [user]);
 
   const referralCode = user.referralCode || (user.fullName.split(' ')[0].toUpperCase() + user.id.substring(0, 4));
-  const referralLink = `${window.location.origin}/#/signup?ref=${referralCode}`;
-  
+  const referralLink = `${window.location.origin}/signup?ref=${referralCode}`;
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
@@ -153,16 +153,16 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
   const saveClaim = (claim: Claim) => {
     const globalClaims = JSON.parse(localStorage.getItem('wa_global_claims') || '[]');
     let updatedGlobal;
-    
+
     if (globalClaims.find((c: Claim) => c.id === claim.id)) {
       updatedGlobal = globalClaims.map((c: Claim) => c.id === claim.id ? { ...claim, userName: user.fullName } : c);
     } else {
       updatedGlobal = [{ ...claim, userName: user.fullName }, ...globalClaims];
     }
-    
+
     localStorage.setItem('wa_global_claims', JSON.stringify(updatedGlobal));
     setClaims(updatedGlobal.filter((c: Claim) => c.userId === user.id));
-    
+
     const activities = JSON.parse(localStorage.getItem('wa_global_activities') || '[]');
     activities.unshift({
       id: Math.random().toString(36).substr(2, 9),
@@ -173,7 +173,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
       timestamp: new Date().toISOString()
     });
     localStorage.setItem('wa_global_activities', JSON.stringify(activities.slice(0, 50)));
-    
+
     setIsAddingClaim(false);
     setEditingClaim(null);
   };
@@ -210,7 +210,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
             {isFreeTier ? "You are currently exploring our Free Tier. Upgrade to access our full suite of advocacy tools." : `You are currently on the ${user.plan} plan.`}
           </p>
           <div className="flex gap-4">
-            <button 
+            <button
               onClick={() => setShowUpgradeModal(true)}
               className="inline-flex items-center gap-2 px-8 py-3 bg-[#0ea5e9] hover:bg-sky-400 text-white rounded-full font-bold text-sm transition-all shadow-xl shadow-sky-500/20 active:scale-95"
             >
@@ -268,14 +268,14 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
               Help your neighbors protect their warranties and earn <span className="font-bold underline">20% commission</span> ($100 per annual signup).
             </p>
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <button 
+              <button
                 onClick={handleCopyLink}
                 className="w-full sm:w-auto px-8 py-4 bg-white text-[#10B981] rounded-full font-bold flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all text-sm"
               >
                 {copied ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                 {copied ? 'Link Copied' : 'Get My Referral Link'}
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/dashboard/rewards')}
                 className="w-full sm:w-auto px-8 py-4 bg-black/10 hover:bg-black/20 text-white rounded-full font-bold transition-all border border-white/10 text-sm"
               >
@@ -286,31 +286,31 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
         </div>
 
         <div className="bg-white rounded-[40px] p-8 lg:p-12 pb-8 lg:pb-8 border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between h-full">
-           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-              <Zap className="w-20 h-20" />
-           </div>
-           <div className="relative z-10 h-full flex flex-col">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Your Subscription</p>
-             <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
-                   <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">{user.plan || 'Free Tier'}</span>
-                  <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1">Active Account</span>
-                </div>
-             </div>
-             <p className="text-sm text-slate-500 mb-8 leading-relaxed font-medium">
-               {isFreeTier ? 'Upgrade to an Advocacy plan for unlimited claim filings and full home/auto protection.' : `Your ${user.plan} plan includes unlimited advocacy for your home and auto claims.`}
-             </p>
-             <button 
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <Zap className="w-20 h-20" />
+          </div>
+          <div className="relative z-10 h-full flex flex-col">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Your Subscription</p>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">{user.plan || 'Free Tier'}</span>
+                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1">Active Account</span>
+              </div>
+            </div>
+            <p className="text-sm text-slate-500 mb-8 leading-relaxed font-medium">
+              {isFreeTier ? 'Upgrade to an Advocacy plan for unlimited claim filings and full home/auto protection.' : `Your ${user.plan} plan includes unlimited advocacy for your home and auto claims.`}
+            </p>
+            <button
               onClick={() => setShowUpgradeModal(true)}
               className="w-full py-4 bg-[#1e3a8a] text-white rounded-2xl font-bold text-sm shadow-xl active:scale-95 transition-all mt-auto flex items-center justify-center gap-2"
-             >
-               {isFreeTier ? 'Upgrade Plan' : 'Manage Subscription'}
-               <ChevronRight className="w-4 h-4" />
-             </button>
-           </div>
+            >
+              {isFreeTier ? 'Upgrade Plan' : 'Manage Subscription'}
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -328,35 +328,34 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
               <h2 className="text-2xl lg:text-3xl font-bold text-[#1e293b] brand-font">Rewards & Affiliate Dashboard</h2>
               <p className="text-slate-500 text-sm mt-1">Earn 20% commission for every successful referral.</p>
             </div>
-            <button 
+            <button
               onClick={handleCopyLink}
-              className={`px-6 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all active:scale-95 ${
-                copied ? 'bg-emerald-500 text-white' : 'bg-[#1e3a8a] text-white hover:bg-blue-800'
-              }`}
+              className={`px-6 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all active:scale-95 ${copied ? 'bg-emerald-500 text-white' : 'bg-[#1e3a8a] text-white hover:bg-blue-800'
+                }`}
             >
               {copied ? <CheckCircle2 className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
               {copied ? 'Link Copied' : 'Copy Referral Link'}
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-             {[
-               { label: 'TOTAL EARNED', value: `$${(user.totalEarned || 0).toFixed(2)}`, sub: '+0% this week', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-               { label: 'PENDING PAYOUT', value: `$${(user.pendingRewards || 0).toFixed(2)}`, sub: 'Payout at $50.00', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
-               { label: 'REFERRAL SIGNUPS', value: '0', sub: '0 clicks today', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-               { label: 'COMMISSION RATE', value: '20%', sub: 'Elite Partner level', icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50' },
-             ].map((stat, i) => (
-               <div key={i} className="bg-white p-8 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-between">
-                 <div className={`w-10 h-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-6`}>
-                   <stat.icon className="w-5 h-5" />
-                 </div>
-                 <div>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                   <p className="text-2xl font-bold text-[#1e293b]">{stat.value}</p>
-                   <p className="text-[10px] text-slate-400 font-medium mt-1">{stat.sub}</p>
-                 </div>
-               </div>
-             ))}
+            {[
+              { label: 'TOTAL EARNED', value: `$${(user.totalEarned || 0).toFixed(2)}`, sub: '+0% this week', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+              { label: 'PENDING PAYOUT', value: `$${(user.pendingRewards || 0).toFixed(2)}`, sub: 'Payout at $50.00', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
+              { label: 'REFERRAL SIGNUPS', value: '0', sub: '0 clicks today', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+              { label: 'COMMISSION RATE', value: '20%', sub: 'Elite Partner level', icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50' },
+            ].map((stat, i) => (
+              <div key={i} className="bg-white p-8 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-between">
+                <div className={`w-10 h-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-6`}>
+                  <stat.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                  <p className="text-2xl font-bold text-[#1e293b]">{stat.value}</p>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">{stat.sub}</p>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -380,25 +379,25 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
               <div className="relative z-10 h-full flex flex-col">
                 <h3 className="text-xl font-bold mb-4 brand-font">Payout Progress</h3>
                 <p className="text-blue-100 text-xs leading-relaxed opacity-80 mb-10">
-                  {isPayoutReady 
-                    ? "Congratulations! You've reached the $50 milestone and can now request a professional payout." 
+                  {isPayoutReady
+                    ? "Congratulations! You've reached the $50 milestone and can now request a professional payout."
                     : "Reach $50.00 in earnings to unlock your first withdrawal via PayPal or Bank Transfer."}
                 </p>
-                
+
                 <div className="mt-auto">
                   {payoutSuccess ? (
                     <div className="p-6 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex flex-col items-center text-center animate-in zoom-in duration-300">
-                       <CheckCircle2 className="w-10 h-10 text-emerald-400 mb-3" />
-                       <p className="text-sm font-bold text-white">Payout Requested!</p>
-                       <p className="text-[10px] text-emerald-100 mt-1">Our finance team will process this within 48 hours.</p>
+                      <CheckCircle2 className="w-10 h-10 text-emerald-400 mb-3" />
+                      <p className="text-sm font-bold text-white">Payout Requested!</p>
+                      <p className="text-[10px] text-emerald-100 mt-1">Our finance team will process this within 48 hours.</p>
                     </div>
                   ) : isPayoutReady ? (
                     <div className="space-y-4 animate-fade-in">
-                       <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-widest mb-2">
+                      <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-widest mb-2">
                         <span className="text-emerald-400">Status: Milestone Reached</span>
                         <span className="text-white">${(user.totalEarned || 0).toFixed(2)} / $50.00</span>
                       </div>
-                      <button 
+                      <button
                         onClick={handlePayoutRequest}
                         disabled={isRequestingPayout}
                         className="w-full py-5 bg-[#0ea5e9] text-white rounded-[20px] font-black text-xs uppercase tracking-widest hover:bg-sky-400 shadow-xl shadow-sky-500/20 active:scale-95 transition-all flex items-center justify-center gap-3"
@@ -431,7 +430,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
         </div>
       );
     }
-    
+
     if (path === '/dashboard/warranties') {
       if (isFreeTier) {
         return (
@@ -444,13 +443,13 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
               The secure Document Vault is a premium feature. Digitally store your protection plans, track expiration dates, and get automated maintenance reminders.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <button 
+              <button
                 onClick={() => setShowUpgradeModal(true)}
                 className="px-10 py-4 bg-blue-900 text-white rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-xl active:scale-95"
               >
                 Upgrade Plan to Unlock
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/dashboard')}
                 className="px-10 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95"
               >
@@ -468,7 +467,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
               <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 brand-font">Warranty Vault</h2>
               <p className="text-slate-500 text-lg">Securely digitize and manage all your protection contracts.</p>
             </div>
-            <button 
+            <button
               onClick={() => setIsAddingWarranty(true)}
               className="px-8 py-4 bg-[#1e3a8a] text-white rounded-[20px] font-bold shadow-xl flex items-center gap-2 w-full md:w-auto justify-center"
             >
@@ -480,88 +479,87 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {warranties.map((warranty) => (
                 <div key={warranty.id} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-md transition-all group relative flex flex-col h-full">
-                   <div className="absolute top-6 right-6 flex gap-2">
-                      <button 
-                        onClick={() => setEditingWarranty(warranty)}
-                        className="p-2 text-slate-300 hover:text-blue-500 transition-colors"
-                        title="Edit Details"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => deleteWarranty(warranty.id)}
-                        className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                   </div>
-                   <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shrink-0 ${
-                     warranty.type === 'HOME' ? 'bg-blue-50 text-blue-600' : 'bg-sky-50 text-sky-600'
-                   }`}>
-                      {warranty.type === 'HOME' ? <HomeIcon className="w-8 h-8" /> : <Car className="w-8 h-8" />}
-                   </div>
-                   <h3 className="text-xl font-bold text-slate-900 mb-1 truncate pr-16">{warranty.title}</h3>
-                   <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                     <Zap className="w-3 h-3 fill-current" /> {warranty.planName || 'Standard Plan'}
-                   </p>
-                   <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                     <Building2 className="w-4 h-4" /> {warranty.provider}
-                   </p>
-                   
-                   <div className="flex flex-col gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 mb-6">
-                      <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                         <div className="flex flex-col">
-                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Start Date</span>
-                           <span className="text-xs font-bold text-slate-900 mt-0.5">{new Date(warranty.startDate).toLocaleDateString()}</span>
-                         </div>
-                         <div className="flex flex-col text-right">
-                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">End Date</span>
-                           <span className="text-xs font-bold text-slate-900 mt-0.5">{new Date(warranty.expirationDate).toLocaleDateString()}</span>
-                         </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Status</span>
-                         <span className={`text-[10px] font-black flex items-center gap-1.5 ${warranty.isActive ? 'text-emerald-500' : 'text-red-500'}`}>
-                           {warranty.isActive ? <CheckCircle2 className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
-                           {warranty.isActive ? 'ACTIVE' : 'INACTIVE'}
-                         </span>
-                      </div>
-                   </div>
+                  <div className="absolute top-6 right-6 flex gap-2">
+                    <button
+                      onClick={() => setEditingWarranty(warranty)}
+                      className="p-2 text-slate-300 hover:text-blue-500 transition-colors"
+                      title="Edit Details"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteWarranty(warranty.id)}
+                      className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shrink-0 ${warranty.type === 'HOME' ? 'bg-blue-50 text-blue-600' : 'bg-sky-50 text-sky-600'
+                    }`}>
+                    {warranty.type === 'HOME' ? <HomeIcon className="w-8 h-8" /> : <Car className="w-8 h-8" />}
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-1 truncate pr-16">{warranty.title}</h3>
+                  <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <Zap className="w-3 h-3 fill-current" /> {warranty.planName || 'Standard Plan'}
+                  </p>
+                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <Building2 className="w-4 h-4" /> {warranty.provider}
+                  </p>
 
-                   <div className="mt-auto pt-4 flex gap-3">
-                      {warranty.documentUrl ? (
-                        <button 
-                          onClick={() => setViewingDocument(warranty.documentUrl || null)}
-                          className="flex-1 py-3 bg-[#1e3a8a] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-sky-600 transition-all active:scale-95"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> View Document
-                        </button>
-                      ) : (
-                        <button 
-                          disabled
-                          className="flex-1 py-3 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs flex items-center justify-center gap-2 italic"
-                        >
-                          No Document Attached
-                        </button>
-                      )}
-                   </div>
+                  <div className="flex flex-col gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 mb-6">
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Start Date</span>
+                        <span className="text-xs font-bold text-slate-900 mt-0.5">{new Date(warranty.startDate).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex flex-col text-right">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">End Date</span>
+                        <span className="text-xs font-bold text-slate-900 mt-0.5">{new Date(warranty.expirationDate).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Status</span>
+                      <span className={`text-[10px] font-black flex items-center gap-1.5 ${warranty.isActive ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {warranty.isActive ? <CheckCircle2 className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                        {warranty.isActive ? 'ACTIVE' : 'INACTIVE'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto pt-4 flex gap-3">
+                    {warranty.documentUrl ? (
+                      <button
+                        onClick={() => setViewingDocument(warranty.documentUrl || null)}
+                        className="flex-1 py-3 bg-[#1e3a8a] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-sky-600 transition-all active:scale-95"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> View Document
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="flex-1 py-3 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs flex items-center justify-center gap-2 italic"
+                      >
+                        No Document Attached
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="bg-white p-24 lg:p-32 rounded-[48px] border border-dashed border-slate-200 text-center">
-               <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-100">
-                 <FileText className="w-12 h-12" />
-               </div>
-               <h3 className="text-2xl font-bold text-slate-900 mb-2">Your vault is empty</h3>
-               <p className="text-slate-500 max-w-sm mx-auto mb-10 text-lg leading-relaxed">Keep all your contracts and receipts in one secure place.</p>
-               <button 
+              <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-100">
+                <FileText className="w-12 h-12" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Your vault is empty</h3>
+              <p className="text-slate-500 max-w-sm mx-auto mb-10 text-lg leading-relaxed">Keep all your contracts and receipts in one secure place.</p>
+              <button
                 onClick={() => setIsAddingWarranty(true)}
                 className="px-8 py-4 bg-slate-100 text-slate-600 rounded-[20px] font-bold hover:bg-slate-200 transition-all"
-               >
-                 Add First Warranty
-               </button>
+              >
+                Add First Warranty
+              </button>
             </div>
           )}
         </div>
@@ -576,7 +574,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
               <h2 className="text-3xl lg:text-4xl font-bold text-[#1e293b] brand-font">Claim Advocacy</h2>
               <p className="text-slate-500 text-sm mt-1">Track your ongoing claims and professional advocacy requests.</p>
             </div>
-            <button 
+            <button
               onClick={handleOpenNewClaim}
               className="px-6 py-3 bg-[#1e3a8a] text-white rounded-[12px] font-bold shadow-xl flex items-center gap-2 w-full md:w-auto justify-center group relative transition-all active:scale-95"
             >
@@ -586,15 +584,14 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
           {claims.length > 0 ? (
             <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-50">
               {claims.map((claim) => (
-                <div 
-                  key={claim.id} 
+                <div
+                  key={claim.id}
                   onClick={() => setEditingClaim(claim)}
                   className="p-8 flex items-center justify-between hover:bg-slate-50 group cursor-pointer transition-colors"
                 >
                   <div className="flex items-center gap-8">
-                    <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center shrink-0 ${
-                      claim.type === ClaimType.HOME ? 'bg-blue-50 text-blue-600' : 'bg-sky-50 text-sky-600'
-                    }`}>
+                    <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center shrink-0 ${claim.type === ClaimType.HOME ? 'bg-blue-50 text-blue-600' : 'bg-sky-50 text-sky-600'
+                      }`}>
                       {claim.type === ClaimType.HOME ? <HomeIcon className="w-8 h-8" /> : <Car className="w-8 h-8" />}
                     </div>
                     <div>
@@ -606,10 +603,9 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
                     </div>
                   </div>
                   <div className="flex items-center gap-8">
-                    <span className={`px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-[0.15em] border-2 ${
-                      claim.status === ClaimStatus.PENDING ? 'bg-amber-50 text-amber-600 border-amber-100' : 
-                      claim.status === ClaimStatus.PROCESSING ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                    }`}>
+                    <span className={`px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-[0.15em] border-2 ${claim.status === ClaimStatus.PENDING ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        claim.status === ClaimStatus.PROCESSING ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                      }`}>
                       {claim.status}
                     </span>
                     <button className="p-3 bg-slate-50 text-slate-400 rounded-xl group-hover:bg-[#1e3a8a] group-hover:text-white transition-all">
@@ -626,7 +622,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
               </div>
               <h3 className="text-2xl font-bold text-slate-900 mb-2 brand-font">No Open Claims</h3>
               <p className="text-slate-500 max-w-sm mx-auto mb-8 text-base leading-relaxed">When we file a claim on your behalf, it will appear here.</p>
-              <button 
+              <button
                 onClick={handleOpenNewClaim}
                 className="text-blue-600 font-bold text-sm hover:underline transition-all"
               >
@@ -641,147 +637,147 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
     if (path === '/dashboard/profile') {
       return (
         <div className="p-6 lg:p-12 max-w-6xl mx-auto space-y-8 animate-fade-in pb-20 no-scrollbar">
-           <div className="text-left mb-10">
-              <h2 className="text-4xl font-bold text-slate-900 brand-font mb-2">User Profile</h2>
-              <p className="text-slate-500 text-lg font-medium">Manage your personal information and account settings.</p>
-            </div>
+          <div className="text-left mb-10">
+            <h2 className="text-4xl font-bold text-slate-900 brand-font mb-2">User Profile</h2>
+            <p className="text-slate-500 text-lg font-medium">Manage your personal information and account settings.</p>
+          </div>
 
           <form onSubmit={handleProfileSubmit} className="bg-white rounded-[48px] shadow-2xl border border-slate-100 overflow-hidden relative pb-12">
             <div className="bg-[#1e3a8a] h-32 lg:h-48 w-full relative"></div>
 
             <div className="relative px-6 lg:px-16 -mt-16 lg:-mt-20">
-               <div className="flex flex-col items-start mb-12">
-                 <div className="relative group">
-                    <div className="w-32 h-32 lg:w-44 lg:h-44 rounded-full border-[6px] border-white bg-[#f1f5f9] overflow-hidden shadow-xl flex items-center justify-center text-slate-300">
-                       {user.photoUrl ? (
-                         <img src={user.photoUrl} alt="Profile" className="w-full h-full object-cover" />
-                       ) : (
-                         <UserIcon className="w-16 h-16 lg:w-20 lg:h-20" />
-                       )}
+              <div className="flex flex-col items-start mb-12">
+                <div className="relative group">
+                  <div className="w-32 h-32 lg:w-44 lg:h-44 rounded-full border-[6px] border-white bg-[#f1f5f9] overflow-hidden shadow-xl flex items-center justify-center text-slate-300">
+                    {user.photoUrl ? (
+                      <img src={user.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="w-16 h-16 lg:w-20 lg:h-20" />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => profileImageInputRef.current?.click()}
+                    className="absolute bottom-2 right-2 w-10 h-10 bg-[#0EA5E9] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-sky-600 transition-all border-4 border-white active:scale-90"
+                  >
+                    <Camera className="w-5 h-5" />
+                  </button>
+                  <input
+                    type="file"
+                    ref={profileImageInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-12">
+                <div className="space-y-8">
+                  <h4 className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.2em] mb-4">Identity Details</h4>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Display Name</label>
+                    <div className="relative">
+                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={profileForm.fullName}
+                        onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                        className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all"
+                      />
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={() => profileImageInputRef.current?.click()}
-                      className="absolute bottom-2 right-2 w-10 h-10 bg-[#0EA5E9] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-sky-600 transition-all border-4 border-white active:scale-90"
-                    >
-                      <Camera className="w-5 h-5" />
-                    </button>
-                    <input 
-                      type="file" 
-                      ref={profileImageInputRef} 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={handleImageUpload} 
-                    />
-                 </div>
-               </div>
-
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-12">
-                  <div className="space-y-8">
-                     <h4 className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.2em] mb-4">Identity Details</h4>
-                     
-                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Display Name</label>
-                        <div className="relative">
-                           <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                           <input 
-                             type="text" 
-                             value={profileForm.fullName} 
-                             onChange={(e) => setProfileForm({...profileForm, fullName: e.target.value})}
-                             className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all" 
-                           />
-                        </div>
-                     </div>
-
-                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Account Email (Locked)</label>
-                        <div className="relative">
-                           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                           <input 
-                             type="text" 
-                             readOnly 
-                             value={profileForm.email} 
-                             className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all" 
-                           />
-                        </div>
-                     </div>
-
-                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Primary Phone</label>
-                        <div className="relative">
-                           <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                           <input 
-                             type="text" 
-                             value={profileForm.phone} 
-                             onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
-                             className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all" 
-                           />
-                        </div>
-                     </div>
                   </div>
 
-                  <div className="space-y-8">
-                     <h4 className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.2em] mb-4">Location Settings</h4>
-
-                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Street Address</label>
-                        <div className="relative">
-                           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                           <input 
-                             type="text" 
-                             value={profileForm.address} 
-                             onChange={(e) => setProfileForm({...profileForm, address: e.target.value})}
-                             className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all" 
-                           />
-                        </div>
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-1.5">
-                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">State</label>
-                           <div className="relative">
-                              <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                              <input 
-                                type="text" 
-                                value={profileForm.state} 
-                                onChange={(e) => setProfileForm({...profileForm, state: e.target.value})}
-                                className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all" 
-                              />
-                           </div>
-                        </div>
-                        <div className="space-y-1.5">
-                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Zip Code</label>
-                           <div className="relative">
-                              <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                              <input 
-                                type="text" 
-                                value={profileForm.postcode} 
-                                onChange={(e) => setProfileForm({...profileForm, postcode: e.target.value})}
-                                className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all" 
-                              />
-                           </div>
-                        </div>
-                     </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Account Email (Locked)</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        readOnly
+                        value={profileForm.email}
+                        className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all"
+                      />
+                    </div>
                   </div>
-               </div>
 
-               <div className="mt-16 pt-8 border-t border-slate-100 flex justify-end gap-4 items-center">
-                  <button 
-                    type="button" 
-                    onClick={() => navigate('/dashboard')}
-                    className="px-10 py-3 bg-[#f1f5f9] text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all active:scale-95"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={isSavingProfile}
-                    className="px-10 py-3 bg-[#1e3a8a] text-white rounded-xl font-bold text-sm shadow-xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-                  >
-                    {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardCheck className="w-4 h-4" />}
-                    {isSavingProfile ? 'Saving...' : 'Complete Profile'}
-                  </button>
-               </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Primary Phone</label>
+                    <div className="relative">
+                      <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  <h4 className="text-[10px] font-black text-[#94a3b8] uppercase tracking-[0.2em] mb-4">Location Settings</h4>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Street Address</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={profileForm.address}
+                        onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                        className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">State</label>
+                      <div className="relative">
+                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          type="text"
+                          value={profileForm.state}
+                          onChange={(e) => setProfileForm({ ...profileForm, state: e.target.value })}
+                          className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Zip Code</label>
+                      <div className="relative">
+                        <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          type="text"
+                          value={profileForm.postcode}
+                          onChange={(e) => setProfileForm({ ...profileForm, postcode: e.target.value })}
+                          className="w-full pl-12 pr-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-16 pt-8 border-t border-slate-100 flex justify-end gap-4 items-center">
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard')}
+                  className="px-10 py-3 bg-[#f1f5f9] text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="px-10 py-3 bg-[#1e3a8a] text-white rounded-xl font-bold text-sm shadow-xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                >
+                  {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardCheck className="w-4 h-4" />}
+                  {isSavingProfile ? 'Saving...' : 'Complete Profile'}
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -796,30 +792,30 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onUpdateProfile }) 
       {renderContent()}
       {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} onUpdateProfile={onUpdateProfile} />}
       {(isAddingClaim || editingClaim) && (
-        <StartNewClaimModal 
-          user={user} 
+        <StartNewClaimModal
+          user={user}
           initialData={editingClaim}
-          onClose={() => { setIsAddingClaim(false); setEditingClaim(null); }} 
-          onSaveClaim={saveClaim} 
+          onClose={() => { setIsAddingClaim(false); setEditingClaim(null); }}
+          onSaveClaim={saveClaim}
           onViewDoc={setViewingDocument}
         />
       )}
       {!isFreeTier && (isAddingWarranty || editingWarranty) && (
-        <AddEditWarrantyModal 
-          user={user} 
-          initialData={editingWarranty} 
-          onClose={() => { setIsAddingWarranty(false); setEditingWarranty(null); }} 
-          onSave={handleSaveWarranty} 
+        <AddEditWarrantyModal
+          user={user}
+          initialData={editingWarranty}
+          onClose={() => { setIsAddingWarranty(false); setEditingWarranty(null); }}
+          onSave={handleSaveWarranty}
         />
       )}
       {viewingDocument && (
-        <DocumentViewerModal 
-          url={viewingDocument} 
-          onClose={() => setViewingDocument(null)} 
+        <DocumentViewerModal
+          url={viewingDocument}
+          onClose={() => setViewingDocument(null)}
         />
       )}
-      
-      <button 
+
+      <button
         onClick={handleOpenNewClaim}
         className="fixed bottom-8 right-8 lg:hidden w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform z-40"
       >
@@ -840,11 +836,11 @@ const UpgradeModal: React.FC<{ onClose: () => void; onUpdateProfile?: (p: Partia
           <button onClick={onClose} className="absolute top-8 right-8 p-1 text-slate-400 hover:text-slate-900 transition-all z-20">
             <X className="w-6 h-6" />
           </button>
-          
+
           <div className="w-16 h-16 bg-blue-50 text-[#1e3a8a] rounded-[24px] flex items-center justify-center mb-6 shadow-sm border border-blue-100/50">
             <Zap className="w-8 h-8 fill-current" />
           </div>
-          
+
           <h3 className="text-4xl font-bold text-[#0f172a] brand-font mb-2">Upgrade Your Plan</h3>
           <p className="text-slate-500 font-medium text-lg">Get unlimited advocacy and full vault access.</p>
         </div>
@@ -857,7 +853,7 @@ const UpgradeModal: React.FC<{ onClose: () => void; onUpdateProfile?: (p: Partia
               <span className="text-4xl font-black text-[#0f172a]">$49.99</span>
               <span className="text-slate-400 font-bold text-base">/mo</span>
             </div>
-            
+
             <ul className="space-y-4 mb-10 flex-grow">
               {[
                 "Unlimited Claims",
@@ -872,8 +868,8 @@ const UpgradeModal: React.FC<{ onClose: () => void; onUpdateProfile?: (p: Partia
                 </li>
               ))}
             </ul>
-            
-            <button 
+
+            <button
               onClick={() => { onUpdateProfile?.({ plan: 'BASIC' }); onClose(); }}
               className="w-full py-5 bg-[#f1f5f9] text-[#1e3a8a] rounded-[24px] font-black text-[13px] uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95 shadow-sm"
             >
@@ -886,13 +882,13 @@ const UpgradeModal: React.FC<{ onClose: () => void; onUpdateProfile?: (p: Partia
             <div className="absolute top-0 right-1/2 translate-x-1/2">
               <span className="px-6 py-2 bg-[#0ea5e9] text-white rounded-b-[16px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">Best Value</span>
             </div>
-            
+
             <h4 className="font-bold text-2xl mb-4 mt-4">Premium Advocacy</h4>
             <div className="flex items-baseline gap-1 mb-8">
               <span className="text-4xl font-black">$499</span>
               <span className="text-blue-300 font-bold text-base">/yr</span>
             </div>
-            
+
             <ul className="space-y-4 mb-10 flex-grow">
               <li className="flex items-center gap-3 text-[13px] font-bold text-blue-50">
                 <Zap className="w-4 h-4 text-[#0ea5e9] fill-current shrink-0" />
@@ -907,8 +903,8 @@ const UpgradeModal: React.FC<{ onClose: () => void; onUpdateProfile?: (p: Partia
                 Priority Advocacy
               </li>
             </ul>
-            
-            <button 
+
+            <button
               onClick={() => { onUpdateProfile?.({ plan: 'PREMIUM' }); onClose(); }}
               className="w-full py-5 bg-[#0ea5e9] text-white rounded-[24px] font-black text-[13px] uppercase tracking-widest hover:bg-sky-400 transition-all active:scale-95 shadow-xl shadow-sky-500/20"
             >
@@ -921,17 +917,17 @@ const UpgradeModal: React.FC<{ onClose: () => void; onUpdateProfile?: (p: Partia
   );
 };
 
-const StartNewClaimModal: React.FC<{ 
-  user: UserProfile; 
+const StartNewClaimModal: React.FC<{
+  user: UserProfile;
   initialData?: Claim | null;
-  onClose: () => void; 
+  onClose: () => void;
   onSaveClaim: (c: Claim) => void;
   onViewDoc: (url: string) => void;
 }> = ({ user, initialData, onClose, onSaveClaim, onViewDoc }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<'SELECTION' | 'DETAILS'>(initialData ? 'DETAILS' : 'SELECTION');
   const [selectedType, setSelectedType] = useState<ClaimType>(initialData?.type || ClaimType.HOME);
-  
+
   const [address, setAddress] = useState(initialData?.propertyAddress || '');
   const [propertyType, setPropertyType] = useState(initialData?.propertyType || 'Single Family');
   const [isPrimary, setIsPrimary] = useState(initialData?.isPrimaryResidence ?? true);
@@ -939,7 +935,7 @@ const StartNewClaimModal: React.FC<{
   const [problemDate, setProblemDate] = useState('');
   const [priority, setPriority] = useState<ClaimPriority>(initialData?.priority || ClaimPriority.MEDIUM);
   const [description, setDescription] = useState(initialData?.description || '');
-  
+
   const [newDocuments, setNewDocuments] = useState<ClaimDocument[]>([]);
   const [existingDocuments, setExistingDocuments] = useState<ClaimDocument[]>(initialData?.documents || []);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -990,7 +986,7 @@ const StartNewClaimModal: React.FC<{
   const handleInitialize = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsInitializing(true);
-    
+
     const finalClaim: Claim = {
       id: initialData?.id || 'CLM-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
       userId: user.id,
@@ -1008,7 +1004,7 @@ const StartNewClaimModal: React.FC<{
     };
 
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     onSaveClaim(finalClaim);
     setIsInitializing(false);
     onClose();
@@ -1020,7 +1016,7 @@ const StartNewClaimModal: React.FC<{
         <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
           <div className="px-10 pt-8 pb-4 flex justify-between items-center bg-white z-10 sticky top-0">
             {!initialData && (
-              <button 
+              <button
                 onClick={() => setStep('SELECTION')}
                 className="flex items-center gap-2 text-slate-400 hover:text-blue-900 transition-colors text-xs font-bold"
               >
@@ -1044,58 +1040,58 @@ const StartNewClaimModal: React.FC<{
                 <div className="flex items-center gap-2 text-blue-900/40 font-black text-[10px] uppercase tracking-widest mb-4">
                   <Building2 className="w-4 h-4" /> Property Verification
                 </div>
-                
+
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Property Address</label>
-                   <div className="relative">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                      <input 
-                        required
-                        type="text" 
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        placeholder="Full street address, city, state" 
-                        className="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-sm font-medium"
-                      />
-                   </div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Property Address</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input
+                      required
+                      type="text"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Full street address, city, state"
+                      className="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-sm font-medium"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Property Type</label>
-                      <div className="relative">
-                         <select 
-                          value={propertyType}
-                          onChange={(e) => setPropertyType(e.target.value)}
-                          className="w-full px-6 py-4 bg-white border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 appearance-none text-sm font-medium"
-                         >
-                           <option>Single Family</option>
-                           <option>Condo / Townhouse</option>
-                           <option>Multi-Family</option>
-                           <option>Commercial</option>
-                         </select>
-                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-                      </div>
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Primary Residence?</label>
-                      <div className="flex bg-white p-1 rounded-2xl border border-slate-100">
-                         <button type="button" onClick={() => setIsPrimary(true)} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${isPrimary ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-slate-400'}`}>Yes</button>
-                         <button type="button" onClick={() => setIsPrimary(false)} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${!isPrimary ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-slate-400'}`}>No</button>
-                      </div>
-                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Property Type</label>
+                    <div className="relative">
+                      <select
+                        value={propertyType}
+                        onChange={(e) => setPropertyType(e.target.value)}
+                        className="w-full px-6 py-4 bg-white border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 appearance-none text-sm font-medium"
+                      >
+                        <option>Single Family</option>
+                        <option>Condo / Townhouse</option>
+                        <option>Multi-Family</option>
+                        <option>Commercial</option>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Primary Residence?</label>
+                    <div className="flex bg-white p-1 rounded-2xl border border-slate-100">
+                      <button type="button" onClick={() => setIsPrimary(true)} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${isPrimary ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-slate-400'}`}>Yes</button>
+                      <button type="button" onClick={() => setIsPrimary(false)} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${!isPrimary ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-slate-400'}`}>No</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-700 uppercase ml-1">Issue Subject</label>
-                  <input 
+                  <input
                     required
-                    type="text" 
+                    type="text"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="e.g. Denied HVAC replacement claim" 
+                    placeholder="e.g. Denied HVAC replacement claim"
                     className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-sm font-medium"
                   />
                 </div>
@@ -1103,14 +1099,14 @@ const StartNewClaimModal: React.FC<{
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date problem began</label>
                     <div className="relative">
-                        <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                        <input 
-                          required
-                          type="date" 
-                          value={problemDate}
-                          onChange={(e) => setProblemDate(e.target.value)}
-                          className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-sm font-medium"
-                        />
+                      <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                      <input
+                        required
+                        type="date"
+                        value={problemDate}
+                        onChange={(e) => setProblemDate(e.target.value)}
+                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-sm font-medium"
+                      />
                     </div>
                   </div>
                 )}
@@ -1119,31 +1115,31 @@ const StartNewClaimModal: React.FC<{
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Priority Level</label>
                 <div className="flex gap-4">
-                   {[
-                     { label: 'Low', value: ClaimPriority.LOW, color: 'bg-emerald-50 text-emerald-500 border-emerald-100', active: 'bg-emerald-500 text-white border-emerald-500' },
-                     { label: 'Medium', value: ClaimPriority.MEDIUM, color: 'bg-amber-50 text-amber-500 border-emerald-100', active: 'bg-amber-500 text-white border-amber-500' },
-                     { label: 'High', value: ClaimPriority.HIGH, color: 'bg-red-50 text-red-500 border-red-100', active: 'bg-red-500 text-white border-red-500' }
-                   ].map((p) => (
-                     <button 
+                  {[
+                    { label: 'Low', value: ClaimPriority.LOW, color: 'bg-emerald-50 text-emerald-500 border-emerald-100', active: 'bg-emerald-500 text-white border-emerald-500' },
+                    { label: 'Medium', value: ClaimPriority.MEDIUM, color: 'bg-amber-50 text-amber-500 border-emerald-100', active: 'bg-amber-500 text-white border-amber-500' },
+                    { label: 'High', value: ClaimPriority.HIGH, color: 'bg-red-50 text-red-500 border-red-100', active: 'bg-red-500 text-white border-red-500' }
+                  ].map((p) => (
+                    <button
                       key={p.value}
                       type="button"
                       onClick={() => setPriority(p.value)}
                       className={`flex-1 py-4 rounded-2xl border text-sm font-bold transition-all ${priority === p.value ? p.active : p.color}`}
-                     >
-                       {p.label}
-                     </button>
-                   ))}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Case Narrative</label>
-                <textarea 
+                <textarea
                   required
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Please provide specific details about the issue..." 
+                  placeholder="Please provide specific details about the issue..."
                   className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 text-sm font-medium resize-none"
                 />
               </div>
@@ -1151,23 +1147,23 @@ const StartNewClaimModal: React.FC<{
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Evidence & Assets</label>
                 <div className="grid grid-cols-2 gap-4">
-                   <input type="file" className="hidden" ref={contractInputRef} multiple onChange={(e) => handleFileUpload(e, 'Contract')} />
-                   <input type="file" className="hidden" ref={photoInputRef} multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'Evidence')} />
-                   
-                   <button 
-                    type="button" 
+                  <input type="file" className="hidden" ref={contractInputRef} multiple onChange={(e) => handleFileUpload(e, 'Contract')} />
+                  <input type="file" className="hidden" ref={photoInputRef} multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'Evidence')} />
+
+                  <button
+                    type="button"
                     onClick={() => contractInputRef.current?.click()}
                     className="flex items-center justify-center gap-3 py-4 bg-white border border-slate-100 rounded-2xl text-slate-500 font-bold text-xs hover:bg-slate-50 transition-all"
-                   >
-                      <FileText className="w-4 h-4 text-blue-500" /> Upload More Docs
-                   </button>
-                   <button 
-                    type="button" 
+                  >
+                    <FileText className="w-4 h-4 text-blue-500" /> Upload More Docs
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => photoInputRef.current?.click()}
                     className="flex items-center justify-center gap-3 py-4 bg-white border border-slate-100 rounded-2xl text-slate-500 font-bold text-xs hover:bg-slate-50 transition-all"
-                   >
-                      <Camera className="w-4 h-4 text-sky-500" /> evidence photos
-                   </button>
+                  >
+                    <Camera className="w-4 h-4 text-sky-500" /> evidence photos
+                  </button>
                 </div>
 
                 {(existingDocuments.length > 0 || newDocuments.length > 0) && (
@@ -1176,24 +1172,24 @@ const StartNewClaimModal: React.FC<{
                     {existingDocuments.map((doc, i) => (
                       <div key={`existing-${i}`} className="flex items-center justify-between text-xs bg-white p-3 rounded-xl border border-slate-100">
                         <div className="flex items-center gap-2">
-                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                           <span className="truncate max-w-[200px] font-bold text-slate-700">{doc.name}</span>
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="truncate max-w-[200px] font-bold text-slate-700">{doc.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                           <button type="button" onClick={() => onViewDoc(doc.url)} className="text-blue-600 font-bold hover:underline uppercase text-[9px] tracking-widest">View Data</button>
-                           <button type="button" onClick={() => setExistingDocuments(prev => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={() => onViewDoc(doc.url)} className="text-blue-600 font-bold hover:underline uppercase text-[9px] tracking-widest">View Data</button>
+                          <button type="button" onClick={() => setExistingDocuments(prev => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
                     ))}
                     {newDocuments.map((doc, i) => (
                       <div key={`new-${i}`} className="flex items-center justify-between text-xs bg-blue-50 p-3 rounded-xl border border-blue-100 animate-pulse">
                         <div className="flex items-center gap-2">
-                           <Paperclip className="w-3.5 h-3.5 text-blue-600" />
-                           <span className="truncate max-w-[200px] font-bold text-blue-700">{doc.name}</span>
+                          <Paperclip className="w-3.5 h-3.5 text-blue-600" />
+                          <span className="truncate max-w-[200px] font-bold text-blue-700">{doc.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                           <button type="button" onClick={() => onViewDoc(doc.url)} className="text-blue-600 font-bold hover:underline uppercase text-[9px] tracking-widest">Preview</button>
-                           <button type="button" onClick={() => setNewDocuments(prev => prev.filter((_, idx) => idx !== i))} className="text-blue-900/30 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                          <button type="button" onClick={() => onViewDoc(doc.url)} className="text-blue-600 font-bold hover:underline uppercase text-[9px] tracking-widest">Preview</button>
+                          <button type="button" onClick={() => setNewDocuments(prev => prev.filter((_, idx) => idx !== i))} className="text-blue-900/30 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                         </div>
                       </div>
                     ))}
@@ -1201,7 +1197,7 @@ const StartNewClaimModal: React.FC<{
                 )}
               </div>
 
-              <button 
+              <button
                 type="submit"
                 disabled={isInitializing}
                 className="w-full py-5 bg-[#1e3a8a] text-white rounded-3xl font-bold text-base hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 flex items-center justify-center gap-3 group"
@@ -1221,10 +1217,10 @@ const StartNewClaimModal: React.FC<{
         <button onClick={onClose} className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all">
           <X className="w-6 h-6" />
         </button>
-        
+
         <div className="text-center mb-12">
           <div className="w-16 h-16 bg-[#1e3a8a] text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-900/10">
-             <ClipboardCheck className="w-8 h-8" />
+            <ClipboardCheck className="w-8 h-8" />
           </div>
           <h3 className="text-4xl font-bold text-[#1e293b] brand-font mb-2 tracking-tight">Start a New Claim</h3>
           <p className="text-slate-500 font-medium text-lg">What do you need advocacy for today?</p>
@@ -1232,26 +1228,26 @@ const StartNewClaimModal: React.FC<{
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {options.map((opt, i) => (
-            <button 
+            <button
               key={i}
-              onClick={() => { 
+              onClick={() => {
                 if (opt.type === ClaimType.HOME) {
-                   setSelectedType(ClaimType.HOME);
-                   setStep('DETAILS');
+                  setSelectedType(ClaimType.HOME);
+                  setStep('DETAILS');
                 } else {
-                   navigate(opt.type === ClaimType.AUTO ? '/auto-warranty-claims' : '/auto-buying-assistance'); 
-                   onClose(); 
+                  navigate(opt.type === ClaimType.AUTO ? '/auto-warranty-claims' : '/auto-buying-assistance');
+                  onClose();
                 }
               }}
               className={`${opt.color} p-10 rounded-[40px] text-left border border-white transition-all hover:scale-[1.03] active:scale-95 flex flex-col items-start gap-5 h-full group`}
             >
-               <div className={`p-4 bg-white rounded-[24px] shadow-sm ${opt.iconColor} group-hover:scale-110 transition-transform`}>
-                 <opt.icon className="w-7 h-7" />
-               </div>
-               <div>
-                  <h4 className="font-bold text-lg tracking-tight mb-2">{opt.title}</h4>
-                  <p className="text-xs leading-relaxed opacity-70 font-medium">{opt.desc}</p>
-               </div>
+              <div className={`p-4 bg-white rounded-[24px] shadow-sm ${opt.iconColor} group-hover:scale-110 transition-transform`}>
+                <opt.icon className="w-7 h-7" />
+              </div>
+              <div>
+                <h4 className="font-bold text-lg tracking-tight mb-2">{opt.title}</h4>
+                <p className="text-xs leading-relaxed opacity-70 font-medium">{opt.desc}</p>
+              </div>
             </button>
           ))}
         </div>
@@ -1261,10 +1257,10 @@ const StartNewClaimModal: React.FC<{
 };
 
 // Enhanced Warranty Modal for Uploading/Editing
-const AddEditWarrantyModal: React.FC<{ 
-  user: UserProfile; 
+const AddEditWarrantyModal: React.FC<{
+  user: UserProfile;
   initialData: Warranty | null;
-  onClose: () => void; 
+  onClose: () => void;
   onSave: (w: Warranty) => void;
 }> = ({ user, initialData, onClose, onSave }) => {
   const [title, setTitle] = useState(initialData?.title || '');
@@ -1294,7 +1290,7 @@ const AddEditWarrantyModal: React.FC<{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
-    
+
     // Artificial delay for feel
     await new Promise(resolve => setTimeout(resolve, 800));
 
@@ -1311,7 +1307,7 @@ const AddEditWarrantyModal: React.FC<{
       documentUrl,
       createdAt: initialData?.createdAt || new Date().toISOString()
     };
-    
+
     onSave(updatedWarranty);
     setIsProcessing(false);
   };
@@ -1328,37 +1324,37 @@ const AddEditWarrantyModal: React.FC<{
           </div>
           <h3 className="text-2xl font-bold text-slate-900 brand-font">{initialData ? 'Edit Warranty' : 'Upload to Vault'}</h3>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Document Title</label>
-            <input 
-              required 
-              value={title} 
-              onChange={e => setTitle(e.target.value)} 
-              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold" 
-              placeholder="e.g. My Home Protection Plan" 
+            <input
+              required
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold"
+              placeholder="e.g. My Home Protection Plan"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Warranty Provider Name</label>
-              <input 
-                required 
-                value={provider} 
-                onChange={e => setProvider(e.target.value)} 
-                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold" 
-                placeholder="e.g. American Home Shield" 
+              <input
+                required
+                value={provider}
+                onChange={e => setProvider(e.target.value)}
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold"
+                placeholder="e.g. American Home Shield"
               />
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Warranty Plan Name</label>
-              <input 
-                required 
-                value={planName} 
-                onChange={e => setPlanName(e.target.value)} 
-                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold" 
-                placeholder="e.g. ShieldGold" 
+              <input
+                required
+                value={planName}
+                onChange={e => setPlanName(e.target.value)}
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold"
+                placeholder="e.g. ShieldGold"
               />
             </div>
           </div>
@@ -1366,10 +1362,10 @@ const AddEditWarrantyModal: React.FC<{
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Asset Category</label>
-              <select 
-                value={type} 
-                onChange={e => setType(e.target.value as 'HOME' | 'AUTO')} 
-                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700 appearance-none" 
+              <select
+                value={type}
+                onChange={e => setType(e.target.value as 'HOME' | 'AUTO')}
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700 appearance-none"
               >
                 <option value="HOME">Home Warranty</option>
                 <option value="AUTO">Auto Warranty</option>
@@ -1378,23 +1374,23 @@ const AddEditWarrantyModal: React.FC<{
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Is warranty active?</label>
               <div className="flex bg-slate-50 p-1 rounded-2xl border border-slate-100">
-                 <button type="button" onClick={() => setIsActive(true)} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-slate-400'}`}>Yes</button>
-                 <button type="button" onClick={() => setIsActive(false)} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${!isActive ? 'bg-red-500 text-white shadow-lg' : 'text-slate-400'}`}>No</button>
+                <button type="button" onClick={() => setIsActive(true)} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-slate-400'}`}>Yes</button>
+                <button type="button" onClick={() => setIsActive(false)} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${!isActive ? 'bg-red-500 text-white shadow-lg' : 'text-slate-400'}`}>No</button>
               </div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Warranty Start Date</label>
               <div className="relative">
                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                <input 
-                  required 
-                  type="date" 
-                  value={startDate} 
-                  onChange={e => setStartDate(e.target.value)} 
-                  className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700" 
+                <input
+                  required
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700"
                 />
               </div>
             </div>
@@ -1402,12 +1398,12 @@ const AddEditWarrantyModal: React.FC<{
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Warranty End Date</label>
               <div className="relative">
                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                <input 
-                  required 
-                  type="date" 
-                  value={expirationDate} 
-                  onChange={e => setExpirationDate(e.target.value)} 
-                  className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700" 
+                <input
+                  required
+                  type="date"
+                  value={expirationDate}
+                  onChange={e => setExpirationDate(e.target.value)}
+                  className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-900/5 transition-all text-sm font-bold text-slate-700"
                 />
               </div>
             </div>
@@ -1415,18 +1411,17 @@ const AddEditWarrantyModal: React.FC<{
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Document File</label>
-            <div 
+            <div
               onClick={() => fileInputRef.current?.click()}
-              className={`w-full p-6 border-2 border-dashed rounded-3xl transition-all cursor-pointer text-center group ${
-                documentUrl ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-100 bg-slate-50 hover:bg-white hover:border-blue-400'
-              }`}
+              className={`w-full p-6 border-2 border-dashed rounded-3xl transition-all cursor-pointer text-center group ${documentUrl ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-100 bg-slate-50 hover:bg-white hover:border-blue-400'
+                }`}
             >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept=".pdf,image/*" 
-                onChange={handleFileChange} 
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept=".pdf,image/*"
+                onChange={handleFileChange}
               />
               <div className="flex flex-col items-center gap-2">
                 {documentUrl ? (
@@ -1445,8 +1440,8 @@ const AddEditWarrantyModal: React.FC<{
             </div>
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isProcessing}
             className="w-full py-5 bg-[#1e3a8a] text-white rounded-2xl font-black text-lg hover:bg-sky-600 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 mt-4 disabled:opacity-50"
           >
@@ -1466,37 +1461,37 @@ const DocumentViewerModal: React.FC<{ url: string; onClose: () => void }> = ({ u
       <div className="bg-white w-full max-w-5xl rounded-[40px] shadow-2xl relative overflow-hidden flex flex-col h-[90vh]">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white z-10">
           <div className="flex items-center gap-3">
-             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                <Paperclip className="w-5 h-5" />
-             </div>
-             <h3 className="text-xl font-bold text-slate-900 brand-font">Vault Document Viewer</h3>
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <Paperclip className="w-5 h-5" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 brand-font">Vault Document Viewer</h3>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 transition-all bg-slate-50 rounded-full">
             <X className="w-6 h-6" />
           </button>
         </div>
         <div className="flex-1 overflow-auto bg-slate-50 flex items-center justify-center p-8">
-           {url.startsWith('data:application/pdf') ? (
-             <embed src={url} type="application/pdf" className="w-full h-full rounded-2xl shadow-xl" />
-           ) : (
-             <img src={url} alt="Warranty Document" className="max-w-full max-h-full rounded-2xl shadow-2xl object-contain" />
-           )}
+          {url.startsWith('data:application/pdf') ? (
+            <embed src={url} type="application/pdf" className="w-full h-full rounded-2xl shadow-xl" />
+          ) : (
+            <img src={url} alt="Warranty Document" className="max-w-full max-h-full rounded-2xl shadow-2xl object-contain" />
+          )}
         </div>
         <div className="p-6 bg-white border-t border-slate-100 flex justify-center gap-4">
-           <button 
-             onClick={() => {
-               const link = document.createElement('a');
-               link.href = url;
-               link.download = 'warranty-advocates-document';
-               link.click();
-             }}
-             className="px-8 py-3 bg-[#1e3a8a] text-white rounded-xl font-bold text-sm shadow-lg hover:bg-sky-600 transition-all"
-           >
-             Download Document
-           </button>
-           <button onClick={onClose} className="px-8 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all">
-             Close Preview
-           </button>
+          <button
+            onClick={() => {
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = 'warranty-advocates-document';
+              link.click();
+            }}
+            className="px-8 py-3 bg-[#1e3a8a] text-white rounded-xl font-bold text-sm shadow-lg hover:bg-sky-600 transition-all"
+          >
+            Download Document
+          </button>
+          <button onClick={onClose} className="px-8 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all">
+            Close Preview
+          </button>
         </div>
       </div>
     </div>
